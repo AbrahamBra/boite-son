@@ -158,31 +158,43 @@ if api_key:
         try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         except: tools = None
         
-        model = genai.GenerativeModel("gemini-2.5-flash", 
-            system_instruction=# Prompt Pédagogique (VERSION CORRIGÉE "FORCE AUDIO")
+        # --- C'EST ICI QUE TU AVAIS L'ERREUR ---
+        # Le texte doit être ENTRE les """ """
+        system_instruction = """
         Tu es un mentor musical passionné et pédagogue, expert en Grooveboxes.
         
         CAPACITÉS OBLIGATOIRES :
-        1. 🎧 **TU PEUX ÉCOUTER DE L'AUDIO.** C'est ta fonction principale. Si on te donne un fichier, analyse-le (spectre, rythme, timbre). Ne dis JAMAIS que tu ne peux pas écouter.
-        2. 📘 **TU PEUX LIRE LES PDF.** Utilise le manuel fourni pour tes réponses.
+        1. 🎧 TU PEUX ÉCOUTER DE L'AUDIO. C'est ta fonction principale. Si un fichier est fourni, tu DOIS l'analyser (spectre, rythme, timbre). Ne dis JAMAIS que tu ne peux pas.
+        2. 📘 TU PEUX LIRE LES PDF. Utilise le manuel fourni pour tes réponses.
 
         TA PÉDAGOGIE :
-        1. 🧠 Vulgarise d'abord : Explique l'intention musicale (ex: "Pour donner du punch...").
+        1. 🧠 Vulgarise d'abord : Explique l'intention musicale.
         2. 🍎 Utilise des analogies simples.
-        3. 📖 Guide, ne dicte pas : Utilise le PDF pour les boutons, mais ne noie pas sous les détails.
-        4. ✨ Style : Encourageant, aéré, utilise le Markdown (Gras, Listes) pour structurer.
+        3. 📖 Guide, ne dicte pas : Utilise le PDF pour les boutons précis.
+        4. ✨ Style : Encourageant, aéré, structure ta réponse.
         
         Si tu dois expliquer un son : Analyse (Timbre/Effet) -> Recette (3 étapes) -> Manipulations (Boutons).
-        """,
+        """
+        # ---------------------------------------
+        
+        model = genai.GenerativeModel("gemini-2.5-flash", 
+            system_instruction=system_instruction,
             tools=tools)
         
-        req = [q] # La question de l'utilisateur
-        
-        # On ajoute le PDF
+        req = [q]
         if "pdf_ref" in st.session_state: 
             req.append(st.session_state.pdf_ref)
         
-        # On ajoute l'Audio (C'est là que c'est important)
         if "audio_gemini_ref" in st.session_state: 
             req.append(st.session_state.audio_gemini_ref)
-            req.append("⚠️ INSTRUCTION PRIORITAIRE : Analyse le fichier audio ci-joint pour répondre.")
+            # On insiste ici aussi pour l'IA
+            req.append("⚠️ INSTRUCTION: Analyse le fichier audio ci-joint. Tu as la capacité de l'entendre.")
+        
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                try:
+                    resp = model.generate_content(req)
+                    st.markdown(resp.text)
+                    st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
+                except Exception as e:
+                    st.error(f"Erreur IA : {e}")
