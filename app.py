@@ -140,32 +140,40 @@ if api_key:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
     # --- SUGGESTIONS INTELLIGENTES (UX) ---
-    # On définit les suggestions selon le contexte
     suggestions = []
     
-    # 1. Contexte Audio
-    if "current_audio_path" in st.session_state:
-        suggestions.append("🎹 Comment refaire ce son exactement ?")
-        suggestions.append("🥁 Analyse le rythme de cet audio")
+    has_audio = "current_audio_path" in st.session_state
+    has_pdf = "pdf_ref" in st.session_state
+
+    # 1. LE COMBO ULTIME (Audio + PDF)
+    if has_audio and has_pdf:
+        # C'est la suggestion la plus pertinente :
+        suggestions.append("🔥 Dis-moi comment refaire ce son avec ma machine")
+
+    # 2. Contexte Audio seul
+    if has_audio:
+        suggestions.append("🥁 Analyse le rythme et le swing")
     
-    # 2. Contexte PDF
-    if "pdf_ref" in st.session_state:
-        suggestions.append("🎛️ Explique-moi le filtre (Page Manual)")
-        suggestions.append("💾 Comment on sauvegarde un projet ?")
+    # 3. Contexte PDF seul
+    if has_pdf:
+        suggestions.append("🎛️ À quoi sert le bouton [FUNC] ?")
     
-    # 3. Contexte Général (Web)
-    if not suggestions: # Si rien n'est chargé
-        suggestions.append("🔍 Trouve un tuto 'Techno Rumble'")
-        suggestions.append("🔊 C'est quoi la différence entre Gain et Volume ?")
+    # 4. Contexte Général (Si rien n'est chargé)
+    if not suggestions:
+        suggestions.append("🔍 Trouve un tuto pour débutant")
+        suggestions.append("🔊 Différence entre Gain et Volume ?")
 
     # Affichage des bulles
     if suggestions:
-        st.markdown("<small style='color: #8b949e; margin-bottom: 5px;'>💡 Suggestions rapides :</small>", unsafe_allow_html=True)
-        cols = st.columns(len(suggestions))
+        st.markdown("<small style='color: #8b949e; margin-bottom: 5px;'>💡 Idées :</small>", unsafe_allow_html=True)
+        # On limite à 3 suggestions max pour ne pas encombrer
+        cols = st.columns(min(len(suggestions), 3)) 
         choice = None
         for i, col in enumerate(cols):
-            if col.button(suggestions[i], key=f"sugg_{i}", type="secondary", use_container_width=True):
-                choice = suggestions[i]
+            # On prend seulement les 3 premières
+            if i < 3:
+                if col.button(suggestions[i], key=f"sugg_{i}", type="secondary", use_container_width=True):
+                    choice = suggestions[i]
 
     # --- GESTION DE L'INPUT (Texte OU Bouton) ---
     prompt = st.chat_input("Pose ta question ici...")
