@@ -19,46 +19,51 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     html, body, [class*="css"] {font-family: 'Inter', sans-serif;}
-    
-    /* Boutons standards */
     .stButton > button {border-radius: 8px; font-weight: 600; border: none; transition: 0.2s;}
-    
-    /* Bouton vert (Charger lien) */
     div[data-testid="stHorizontalBlock"] > div:first-child button {background-color: #238636; color: white;}
     
-    /* Boutons de Suggestion (Chips) */
     button[kind="secondary"] {
-        background-color: #21262d; 
-        color: #58a6ff; 
-        border: 1px solid #30363d;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        background-color: #21262d; color: #58a6ff; 
+        border: 1px solid #30363d; border-radius: 20px; font-size: 0.85rem;
     }
-    button[kind="secondary"]:hover {
-        border-color: #58a6ff;
-        background-color: #30363d;
-    }
-
+    button[kind="secondary"]:hover {border-color: #58a6ff; background-color: #30363d;}
+    
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     .block-container {padding-top: 2rem; padding-bottom: 2rem;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- FONCTIONS ---
+# --- FONCTION TÉLÉCHARGEMENT BLINDÉE (ANTI-403) ---
 def download_audio_from_url(url):
     try:
-        ydl_opts = {'format': 'bestaudio[ext=m4a]/best', 'outtmpl': '%(id)s.%(ext)s', 'noplaylist': True, 'quiet': True, 'no_warnings': True}
+        # Options pour contourner les blocages basiques
+        ydl_opts = {
+            'format': 'bestaudio[ext=m4a]/best',
+            'outtmpl': '%(id)s.%(ext)s',
+            'noplaylist': True,
+            'quiet': True,
+            'no_warnings': True,
+            # On se fait passer pour un navigateur Windows standard
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'referer': 'https://www.google.com/',
+            'nocheckcertificate': True,
+        }
+        
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             filename = f"{info['id']}.{info['ext']}"
-            if os.path.exists(filename): return filename, info.get('title', 'Audio Web')
+            if os.path.exists(filename): 
+                return filename, info.get('title', 'Audio Web')
             return None, None
-    except: return None, None
+            
+    except Exception as e:
+        # On renvoie l'erreur pour l'afficher à l'utilisateur
+        print(f"Erreur Download: {e}") 
+        return None, str(e)
 
 def get_mime_type(filename):
     if filename.endswith('.m4a'): return 'audio/mp4'
     if filename.endswith('.wav'): return 'audio/wav'
-    if filename.endswith('.mp3'): return 'audio/mp3'
     return 'audio/mp3'
 
 def upload_pdf_to_gemini(path):
@@ -75,7 +80,6 @@ def upload_pdf_to_gemini(path):
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/7603/7603284.png", width=50)
     st.title("Settings")
-    
     api_key = st.text_input("Clé API Google", type="password")
     
     st.info("📂 **Documentation**")
@@ -101,15 +105,22 @@ with st.container(border=True):
         url_input = st.text_input("Lien YouTube", placeholder="Colle un lien ici...")
         if st.button("Charger le lien", use_container_width=True):
             if url_input:
-                with st.status("Téléchargement...", expanded=True) as status:
-                    f, t = download_audio_from_url(url_input)
+                with st.status("Tentative de connexion à YouTube...", expanded=True) as status:
+                    f, t_or_error = download_audio_from_url(url_input)
+                    
                     if f:
+                        # Succès
                         st.session_state.current_audio_path = f
-                        st.session_state.current_audio_name = t
-                        status.update(label="✅ Audio prêt !", state="complete")
-                        time.sleep(1) # Petit temps pour voir le check vert
-                        st.rerun() # <--- LA CORRECTION EST ICI : ON RECHARGE LA PAGE
-    
+                        st.session_state.current_audio_name = t_or_error
+                        status.update(label="✅ Audio récupéré !", state="complete")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        # Échec (Erreur 403 probable)
+                        status.update(label="❌ Échec du téléchargement", state="error")
+                        st.error(f"YouTube a bloqué la connexion (Erreur 403). C'est fréquent sur les serveurs cloud.")
+                        st.info("💡 **Solution :** Télécharge le MP3 toi-même (via un site comme y2mate) et glisse-le dans la case 'Fichier Local' à droite ->")
+
     with c2:
         uploaded_audio = st.file_uploader("Fichier Local", type=["mp3", "wav", "m4a"])
         if uploaded_audio:
@@ -118,9 +129,9 @@ with st.container(border=True):
                 tmp.write(uploaded_audio.getvalue())
                 st.session_state.current_audio_path = tmp.name
                 st.session_state.current_audio_name = uploaded_audio.name
-                st.rerun() # On recharge aussi ici pour l'upload local
+                st.rerun()
 
-    # LECTEUR AUDIO (S'affiche maintenant correctement après le rerun)
+    # LECTEUR AUDIO
     if "current_audio_path" in st.session_state:
         st.success(f"🎵 Piste chargée : **{st.session_state.get('current_audio_name', 'Inconnu')}**")
         st.audio(st.session_state.current_audio_path)
@@ -129,44 +140,33 @@ with st.container(border=True):
 if api_key:
     genai.configure(api_key=api_key)
     
-    # PDF Load
     if uploaded_pdf and "pdf_ref" not in st.session_state:
         with st.spinner("Lecture du manuel..."):
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t: t.write(uploaded_pdf.getvalue()); p=t.name
             r = upload_pdf_to_gemini(p)
             if r: st.session_state.pdf_ref = r; st.toast("Manuel chargé !", icon="📘")
 
-    # --- HISTORIQUE DU CHAT ---
+    # --- CHAT ---
     st.divider()
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
     
     for m in st.session_state.chat_history:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    # --- SUGGESTIONS INTELLIGENTES (UX) ---
+    # --- SUGGESTIONS (UX) ---
     suggestions = []
-    
     has_audio = "current_audio_path" in st.session_state
     has_pdf = "pdf_ref" in st.session_state
 
-    # 1. LE COMBO ULTIME (Audio + PDF)
     if has_audio and has_pdf:
         suggestions.append("🔥 Dis-moi comment refaire ce son avec ma machine")
-
-    # 2. Contexte Audio seul
     if has_audio:
         suggestions.append("🥁 Analyse le rythme et le swing")
-    
-    # 3. Contexte PDF seul
     if has_pdf:
         suggestions.append("🎛️ À quoi sert le bouton [FUNC] ?")
-    
-    # 4. Contexte Général
     if not suggestions:
         suggestions.append("🔍 Trouve un tuto pour débutant")
-        suggestions.append("🔊 Différence entre Gain et Volume ?")
 
-    # Affichage des bulles
     if suggestions:
         st.markdown("<small style='color: #8b949e; margin-bottom: 5px;'>💡 Idées :</small>", unsafe_allow_html=True)
         cols = st.columns(min(len(suggestions), 3)) 
@@ -176,30 +176,22 @@ if api_key:
                 if col.button(suggestions[i], key=f"sugg_{i}", type="secondary", use_container_width=True):
                     choice = suggestions[i]
 
-    # --- GESTION DE L'INPUT (Texte OU Bouton) ---
+    # --- INPUT ---
     prompt = st.chat_input("Pose ta question ici...")
-
-    if choice:
-        prompt = choice
+    if choice: prompt = choice
     
     if prompt:
         with st.chat_message("user"): st.markdown(prompt)
         st.session_state.chat_history.append({"role": "user", "content": prompt})
         
-        # Tools
         try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         except: tools = None
         
-        # System Prompt (Version Directe)
         sys_prompt = """
         Tu es un expert musical pédagogue.
-        CAPACITÉ CRITIQUE : Tu as reçu un fichier audio dans cette requête. TU DOIS L'ÉCOUTER.
+        CAPACITÉ CRITIQUE : Tu as reçu un fichier audio. TU DOIS L'ÉCOUTER.
         Ne dis jamais que tu ne peux pas. Analyse le spectre, le timbre et le rythme.
-        
-        Ta mission :
-        1. Analyse le son fourni.
-        2. Donne la recette pour le refaire avec la machine du manuel PDF.
-        3. Sois cool, utilise des émojis et vulgarise.
+        Ta mission : Analyse le son, Donne la recette PDF, Sois cool.
         """
         
         model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=sys_prompt, tools=tools)
@@ -207,7 +199,6 @@ if api_key:
         req = [prompt]
         if "pdf_ref" in st.session_state: req.append(st.session_state.pdf_ref)
         
-        # AUDIO INLINE
         if "current_audio_path" in st.session_state:
             audio_path = st.session_state.current_audio_path
             mime = get_mime_type(audio_path)
