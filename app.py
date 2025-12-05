@@ -2,7 +2,6 @@ import streamlit as st
 import google.generativeai as genai
 import os
 import tempfile
-import yt_dlp
 import time
 import pathlib
 
@@ -14,14 +13,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS STYLE ---
+# --- CSS STYLE (Design Pro) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     html, body, [class*="css"] {font-family: 'Inter', sans-serif;}
     .stButton > button {border-radius: 8px; font-weight: 600; border: none; transition: 0.2s;}
-    div[data-testid="stHorizontalBlock"] > div:first-child button {background-color: #238636; color: white;}
     
+    /* Boutons Suggestions */
     button[kind="secondary"] {
         background-color: #21262d; color: #58a6ff; 
         border: 1px solid #30363d; border-radius: 20px; font-size: 0.85rem;
@@ -30,37 +29,18 @@ st.markdown("""
     
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     .block-container {padding-top: 2rem; padding-bottom: 2rem;}
+    
+    /* Zone de Drop plus visible */
+    div[data-testid="stFileUploader"] {
+        border: 1px dashed #30363d;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #0d1117;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- FONCTION TÉLÉCHARGEMENT BLINDÉE (ANTI-403) ---
-def download_audio_from_url(url):
-    try:
-        # Options pour contourner les blocages basiques
-        ydl_opts = {
-            'format': 'bestaudio[ext=m4a]/best',
-            'outtmpl': '%(id)s.%(ext)s',
-            'noplaylist': True,
-            'quiet': True,
-            'no_warnings': True,
-            # On se fait passer pour un navigateur Windows standard
-            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'referer': 'https://www.google.com/',
-            'nocheckcertificate': True,
-        }
-        
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filename = f"{info['id']}.{info['ext']}"
-            if os.path.exists(filename): 
-                return filename, info.get('title', 'Audio Web')
-            return None, None
-            
-    except Exception as e:
-        # On renvoie l'erreur pour l'afficher à l'utilisateur
-        print(f"Erreur Download: {e}") 
-        return None, str(e)
-
+# --- FONCTIONS ---
 def get_mime_type(filename):
     if filename.endswith('.m4a'): return 'audio/mp4'
     if filename.endswith('.wav'): return 'audio/wav'
@@ -96,34 +76,16 @@ with col1:
     st.title("Groovebox Tutor AI")
     st.caption("L'assistant qui écoute tes sons et t'explique comment les refaire.")
 
-# --- ZONE AUDIO ---
+# --- ZONE AUDIO (Simplifiée et Fiable) ---
 with st.container(border=True):
     st.subheader("🎧 Source Audio")
-    c1, c2 = st.columns(2)
+    st.markdown("Importe un fichier audio (MP3, WAV, M4A) pour l'analyser.")
     
-    with c1:
-        url_input = st.text_input("Lien YouTube", placeholder="Colle un lien ici...")
-        if st.button("Charger le lien", use_container_width=True):
-            if url_input:
-                with st.status("Tentative de connexion à YouTube...", expanded=True) as status:
-                    f, t_or_error = download_audio_from_url(url_input)
-                    
-                    if f:
-                        # Succès
-                        st.session_state.current_audio_path = f
-                        st.session_state.current_audio_name = t_or_error
-                        status.update(label="✅ Audio récupéré !", state="complete")
-                        time.sleep(1)
-                        st.rerun()
-                    else:
-                        # Échec (Erreur 403 probable)
-                        status.update(label="❌ Échec du téléchargement", state="error")
-                        st.error(f"YouTube a bloqué la connexion (Erreur 403). C'est fréquent sur les serveurs cloud.")
-                        st.info("💡 **Solution :** Télécharge le MP3 toi-même (via un site comme y2mate) et glisse-le dans la case 'Fichier Local' à droite ->")
-
-    with c2:
-        uploaded_audio = st.file_uploader("Fichier Local", type=["mp3", "wav", "m4a"])
-        if uploaded_audio:
+    uploaded_audio = st.file_uploader("Glisse ton fichier ici", type=["mp3", "wav", "m4a"], label_visibility="collapsed")
+    
+    if uploaded_audio:
+        # Gestion du fichier
+        if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
             suffix = f".{uploaded_audio.name.split('.')[-1]}"
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
                 tmp.write(uploaded_audio.getvalue())
@@ -133,7 +95,7 @@ with st.container(border=True):
 
     # LECTEUR AUDIO
     if "current_audio_path" in st.session_state:
-        st.success(f"🎵 Piste chargée : **{st.session_state.get('current_audio_name', 'Inconnu')}**")
+        st.success(f"🎵 Piste active : **{st.session_state.get('current_audio_name', 'Inconnu')}**")
         st.audio(st.session_state.current_audio_path)
 
 # --- LOGIC INITIALIZATION ---
@@ -165,7 +127,7 @@ if api_key:
     if has_pdf:
         suggestions.append("🎛️ À quoi sert le bouton [FUNC] ?")
     if not suggestions:
-        suggestions.append("🔍 Trouve un tuto pour débutant")
+        suggestions.append("🔍 Trouve un tuto 'Techno Rumble' sur le web")
 
     if suggestions:
         st.markdown("<small style='color: #8b949e; margin-bottom: 5px;'>💡 Idées :</small>", unsafe_allow_html=True)
@@ -191,7 +153,7 @@ if api_key:
         Tu es un expert musical pédagogue.
         CAPACITÉ CRITIQUE : Tu as reçu un fichier audio. TU DOIS L'ÉCOUTER.
         Ne dis jamais que tu ne peux pas. Analyse le spectre, le timbre et le rythme.
-        Ta mission : Analyse le son, Donne la recette PDF, Sois cool.
+        Ta mission : Analyse le son, Donne la recette PDF, Sois cool, utilise des émojis.
         """
         
         model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=sys_prompt, tools=tools)
