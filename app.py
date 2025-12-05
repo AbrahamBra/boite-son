@@ -31,7 +31,7 @@ st.markdown("""
         background-color: #21262d; 
         color: #58a6ff; 
         border: 1px solid #30363d;
-        border-radius: 20px; /* Arrondi style 'Pill' */
+        border-radius: 20px;
         font-size: 0.85rem;
     }
     button[kind="secondary"]:hover {
@@ -106,7 +106,9 @@ with st.container(border=True):
                     if f:
                         st.session_state.current_audio_path = f
                         st.session_state.current_audio_name = t
-                        status.update(label="✅ Prêt !", state="complete", expanded=False)
+                        status.update(label="✅ Audio prêt !", state="complete")
+                        time.sleep(1) # Petit temps pour voir le check vert
+                        st.rerun() # <--- LA CORRECTION EST ICI : ON RECHARGE LA PAGE
     
     with c2:
         uploaded_audio = st.file_uploader("Fichier Local", type=["mp3", "wav", "m4a"])
@@ -116,10 +118,12 @@ with st.container(border=True):
                 tmp.write(uploaded_audio.getvalue())
                 st.session_state.current_audio_path = tmp.name
                 st.session_state.current_audio_name = uploaded_audio.name
+                st.rerun() # On recharge aussi ici pour l'upload local
 
+    # LECTEUR AUDIO (S'affiche maintenant correctement après le rerun)
     if "current_audio_path" in st.session_state:
+        st.success(f"🎵 Piste chargée : **{st.session_state.get('current_audio_name', 'Inconnu')}**")
         st.audio(st.session_state.current_audio_path)
-        st.caption(f"Piste active : {st.session_state.get('current_audio_name', 'Inconnu')}")
 
 # --- LOGIC INITIALIZATION ---
 if api_key:
@@ -147,7 +151,6 @@ if api_key:
 
     # 1. LE COMBO ULTIME (Audio + PDF)
     if has_audio and has_pdf:
-        # C'est la suggestion la plus pertinente :
         suggestions.append("🔥 Dis-moi comment refaire ce son avec ma machine")
 
     # 2. Contexte Audio seul
@@ -158,7 +161,7 @@ if api_key:
     if has_pdf:
         suggestions.append("🎛️ À quoi sert le bouton [FUNC] ?")
     
-    # 4. Contexte Général (Si rien n'est chargé)
+    # 4. Contexte Général
     if not suggestions:
         suggestions.append("🔍 Trouve un tuto pour débutant")
         suggestions.append("🔊 Différence entre Gain et Volume ?")
@@ -166,11 +169,9 @@ if api_key:
     # Affichage des bulles
     if suggestions:
         st.markdown("<small style='color: #8b949e; margin-bottom: 5px;'>💡 Idées :</small>", unsafe_allow_html=True)
-        # On limite à 3 suggestions max pour ne pas encombrer
         cols = st.columns(min(len(suggestions), 3)) 
         choice = None
         for i, col in enumerate(cols):
-            # On prend seulement les 3 premières
             if i < 3:
                 if col.button(suggestions[i], key=f"sugg_{i}", type="secondary", use_container_width=True):
                     choice = suggestions[i]
@@ -178,7 +179,6 @@ if api_key:
     # --- GESTION DE L'INPUT (Texte OU Bouton) ---
     prompt = st.chat_input("Pose ta question ici...")
 
-    # Si on a cliqué sur un bouton, on force le prompt
     if choice:
         prompt = choice
     
@@ -190,7 +190,7 @@ if api_key:
         try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         except: tools = None
         
-        # System Prompt
+        # System Prompt (Version Directe)
         sys_prompt = """
         Tu es un expert musical pédagogue.
         CAPACITÉ CRITIQUE : Tu as reçu un fichier audio dans cette requête. TU DOIS L'ÉCOUTER.
@@ -207,7 +207,7 @@ if api_key:
         req = [prompt]
         if "pdf_ref" in st.session_state: req.append(st.session_state.pdf_ref)
         
-        # AUDIO INLINE (Crucial pour éviter les hallucinations)
+        # AUDIO INLINE
         if "current_audio_path" in st.session_state:
             audio_path = st.session_state.current_audio_path
             mime = get_mime_type(audio_path)
