@@ -159,15 +159,30 @@ if api_key:
         except: tools = None
         
         model = genai.GenerativeModel("gemini-2.5-flash", 
-            system_instruction="Tu es un expert musical pédagogue. Vulgarise les concepts, sois cool, utilise des émojis. Guide pas à pas avec le manuel.",
+            system_instruction=# Prompt Pédagogique (VERSION CORRIGÉE "FORCE AUDIO")
+        Tu es un mentor musical passionné et pédagogue, expert en Grooveboxes.
+        
+        CAPACITÉS OBLIGATOIRES :
+        1. 🎧 **TU PEUX ÉCOUTER DE L'AUDIO.** C'est ta fonction principale. Si on te donne un fichier, analyse-le (spectre, rythme, timbre). Ne dis JAMAIS que tu ne peux pas écouter.
+        2. 📘 **TU PEUX LIRE LES PDF.** Utilise le manuel fourni pour tes réponses.
+
+        TA PÉDAGOGIE :
+        1. 🧠 Vulgarise d'abord : Explique l'intention musicale (ex: "Pour donner du punch...").
+        2. 🍎 Utilise des analogies simples.
+        3. 📖 Guide, ne dicte pas : Utilise le PDF pour les boutons, mais ne noie pas sous les détails.
+        4. ✨ Style : Encourageant, aéré, utilise le Markdown (Gras, Listes) pour structurer.
+        
+        Si tu dois expliquer un son : Analyse (Timbre/Effet) -> Recette (3 étapes) -> Manipulations (Boutons).
+        """,
             tools=tools)
         
-        req = [q]
-        if "pdf_ref" in st.session_state: req.append(st.session_state.pdf_ref)
-        if "audio_gemini_ref" in st.session_state: req.append(st.session_state.audio_gemini_ref); req.append("Analyse l'audio.")
+        req = [q] # La question de l'utilisateur
         
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                resp = model.generate_content(req)
-                st.markdown(resp.text)
-                st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
+        # On ajoute le PDF
+        if "pdf_ref" in st.session_state: 
+            req.append(st.session_state.pdf_ref)
+        
+        # On ajoute l'Audio (C'est là que c'est important)
+        if "audio_gemini_ref" in st.session_state: 
+            req.append(st.session_state.audio_gemini_ref)
+            req.append("⚠️ INSTRUCTION PRIORITAIRE : Analyse le fichier audio ci-joint pour répondre.")
