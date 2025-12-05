@@ -4,6 +4,7 @@ import os
 import tempfile
 import yt_dlp
 import time
+import pathlib
 
 # --- CONFIGURATION ---
 st.set_page_config(
@@ -13,46 +14,23 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CSS CORRECTIF (JUSTE POUR LE STYLE, PAS LES COULEURS DE FOND) ---
+# --- CSS STYLE ---
 st.markdown("""
 <style>
-    /* Police plus moderne */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
-    }
-
-    /* Style des boutons (Arrondis et propres) */
-    .stButton > button {
-        border-radius: 8px;
-        font-weight: 600;
-        border: none;
-        transition: 0.2s;
-    }
-    
-    /* Bouton Principal (Vert) */
-    div[data-testid="stHorizontalBlock"] > div:first-child button {
-        background-color: #238636; 
-        color: white;
-    }
-
-    /* Cacher les éléments parasites de Streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Nettoyage des paddings */
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-    }
+    html, body, [class*="css"] {font-family: 'Inter', sans-serif;}
+    .stButton > button {border-radius: 8px; font-weight: 600; border: none; transition: 0.2s;}
+    div[data-testid="stHorizontalBlock"] > div:first-child button {background-color: #238636; color: white;}
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
+    .block-container {padding-top: 2rem; padding-bottom: 2rem;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- FONCTIONS (Inchangées) ---
+# --- FONCTIONS ---
 def download_audio_from_url(url):
     try:
-        ydl_opts = {'format': 'bestaudio/best', 'outtmpl': '%(id)s.%(ext)s', 'noplaylist': True, 'quiet': True, 'no_warnings': True}
+        # On force m4a pour compatibilité max avec Gemini Inline
+        ydl_opts = {'format': 'bestaudio[ext=m4a]/best', 'outtmpl': '%(id)s.%(ext)s', 'noplaylist': True, 'quiet': True, 'no_warnings': True}
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             filename = f"{info['id']}.{info['ext']}"
@@ -63,11 +41,13 @@ def download_audio_from_url(url):
 def get_mime_type(filename):
     if filename.endswith('.m4a'): return 'audio/mp4'
     if filename.endswith('.wav'): return 'audio/wav'
+    if filename.endswith('.mp3'): return 'audio/mp3'
     return 'audio/mp3'
 
-def upload_to_gemini(path, mime_type):
+def upload_pdf_to_gemini(path):
+    """Pour le PDF, on garde l'upload classique (car fichiers lourds)"""
     try:
-        file_ref = genai.upload_file(path=path, mime_type=mime_type)
+        file_ref = genai.upload_file(path=path, mime_type="application/pdf")
         while file_ref.state.name == "PROCESSING":
             time.sleep(1)
             file_ref = genai.get_file(file_ref.name)
@@ -110,7 +90,6 @@ with st.container(border=True):
                     if f:
                         st.session_state.current_audio_path = f
                         st.session_state.current_audio_name = t
-                        if "audio_gemini_ref" in st.session_state: del st.session_state.audio_gemini_ref
                         status.update(label="✅ Prêt !", state="complete", expanded=False)
     
     with c2:
@@ -121,7 +100,6 @@ with st.container(border=True):
                 tmp.write(uploaded_audio.getvalue())
                 st.session_state.current_audio_path = tmp.name
                 st.session_state.current_audio_name = uploaded_audio.name
-                if "audio_gemini_ref" in st.session_state: del st.session_state.audio_gemini_ref
 
     if "current_audio_path" in st.session_state:
         st.audio(st.session_state.current_audio_path)
@@ -131,16 +109,12 @@ with st.container(border=True):
 if api_key:
     genai.configure(api_key=api_key)
     
+    # PDF Upload (Reference)
     if uploaded_pdf and "pdf_ref" not in st.session_state:
         with st.spinner("Lecture du manuel..."):
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t: t.write(uploaded_pdf.getvalue()); p=t.name
-            r = upload_to_gemini(p, "application/pdf")
+            r = upload_pdf_to_gemini(p)
             if r: st.session_state.pdf_ref = r; st.toast("Manuel chargé !", icon="📘")
-
-    if "current_audio_path" in st.session_state and "audio_gemini_ref" not in st.session_state:
-        with st.spinner("Analyse audio..."):
-            r = upload_to_gemini(st.session_state.current_audio_path, get_mime_type(st.session_state.current_audio_path))
-            if r: st.session_state.audio_gemini_ref = r; st.toast("Audio analysé !", icon="🎹")
 
     # --- CHAT ---
     st.divider()
@@ -154,47 +128,51 @@ if api_key:
         with st.chat_message("user"): st.markdown(q)
         st.session_state.chat_history.append({"role": "user", "content": q})
         
-        # Outils
+        # Outils Search
         try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         except: tools = None
         
-        # --- C'EST ICI QUE TU AVAIS L'ERREUR ---
-        # Le texte doit être ENTRE les """ """
-        system_instruction = """
-        Tu es un mentor musical passionné et pédagogue, expert en Grooveboxes.
+        # Prompt
+        sys_prompt = """
+        Tu es un expert musical pédagogue.
+        CAPACITÉ CRITIQUE : Tu as reçu un fichier audio dans cette requête. TU DOIS L'ÉCOUTER.
+        Ne dis jamais que tu ne peux pas. Analyse le spectre, le timbre et le rythme.
         
-        CAPACITÉS OBLIGATOIRES :
-        1. 🎧 TU PEUX ÉCOUTER DE L'AUDIO. C'est ta fonction principale. Si un fichier est fourni, tu DOIS l'analyser (spectre, rythme, timbre). Ne dis JAMAIS que tu ne peux pas.
-        2. 📘 TU PEUX LIRE LES PDF. Utilise le manuel fourni pour tes réponses.
-
-        TA PÉDAGOGIE :
-        1. 🧠 Vulgarise d'abord : Explique l'intention musicale.
-        2. 🍎 Utilise des analogies simples.
-        3. 📖 Guide, ne dicte pas : Utilise le PDF pour les boutons précis.
-        4. ✨ Style : Encourageant, aéré, structure ta réponse.
-        
-        Si tu dois expliquer un son : Analyse (Timbre/Effet) -> Recette (3 étapes) -> Manipulations (Boutons).
+        Ta mission :
+        1. Analyse le son fourni.
+        2. Donne la recette pour le refaire avec la machine du manuel PDF.
+        3. Sois cool, utilise des émojis et vulgarise.
         """
-        # ---------------------------------------
         
-        model = genai.GenerativeModel("gemini-2.5-flash", 
-            system_instruction=system_instruction,
-            tools=tools)
+        model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=sys_prompt, tools=tools)
         
+        # CONSTRUCTION DE LA REQUÊTE AVEC AUDIO INLINE (LA CLÉ EST ICI)
         req = [q]
+        
+        # 1. Ajout du PDF (si présent)
         if "pdf_ref" in st.session_state: 
             req.append(st.session_state.pdf_ref)
         
-        if "audio_gemini_ref" in st.session_state: 
-            req.append(st.session_state.audio_gemini_ref)
-            # On insiste ici aussi pour l'IA
-            req.append("⚠️ INSTRUCTION: Analyse le fichier audio ci-joint. Tu as la capacité de l'entendre.")
-        
+        # 2. Ajout de l'Audio en DONNÉES BRUTES (Inline Blob)
+        if "current_audio_path" in st.session_state:
+            audio_path = st.session_state.current_audio_path
+            mime = get_mime_type(audio_path)
+            # Lecture des bytes du fichier
+            audio_data = pathlib.Path(audio_path).read_bytes()
+            
+            # Injection directe dans la liste de requête
+            req.append({
+                "mime_type": mime,
+                "data": audio_data
+            })
+            req.append("⚠️ Analyse impérativement les données audio ci-dessus.")
+
+        # Génération
         with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
+            with st.spinner("Écoute et analyse..."):
                 try:
                     resp = model.generate_content(req)
                     st.markdown(resp.text)
                     st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
                 except Exception as e:
-                    st.error(f"Erreur IA : {e}")
+                    st.error(f"Erreur : {e}")
