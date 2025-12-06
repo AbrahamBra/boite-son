@@ -103,6 +103,7 @@ L'IA n'est pas un chatbot passif. C'est un **Coach Proactif** qui :
         "title": "Groovebox Tutor",
         "subtitle": "Votre binôme technique. Décryptez le son. Maîtrisez votre machine.",
         "placeholder": "Posez une question ou laissez l'IA analyser...",
+        "analyzing": "Analyse..." #
         "sugg_1": "Analyse ce son",
         "sugg_2": "Structure rythmique",
         "sugg_3": "Fonction cachée",
@@ -517,7 +518,7 @@ if api_key:
         # On affiche un spinner DANS le container du chat
         with chat_container:
             with st.chat_message("assistant"):
-                with st.spinner(TR["Français 🇫🇷"]["analyzing"]):
+                with st.spinner("🧠 Analyse en cours..."):
                     try:
                         req = []
                         if "pdf_ref" in st.session_state: req.extend([st.session_state.pdf_ref, "MANUEL"])
