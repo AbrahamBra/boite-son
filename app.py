@@ -448,26 +448,7 @@ Invite au retour d'expérience.
 🔄 **Itération**
 ''' if "Interactive" in style_format or "Interactif" in style_format else ""}
 
----
 
-# 🧠 PRINCIPES PÉDAGOGIQUES
-
-1. **Autonomie > Solution rapide**
-   Goal = COMPRENDRE la synthèse, pas copier un preset.
-
-2. **Apprentissage par l'erreur**
-   Encourage les tests ratés : "Qu'as-tu appris ?"
-
-3. **Analogies culturelles**
-   Filtre = robinet, envelope = rebond de balle, résonance = corde qui vibre
-
-4. **Progressivité**
-   Layer 1 : Son de base → Layer 2 : Envelope → Layer 3 : Modulations → Layer 4 : Effets
-
-5. **Contexte matériel**
-   {"Adapte tout au gear de l'utilisateur détecté via le manuel" if has_manual else "Reste sur les principes universels applicables à toute machine"}
-
----
 
 # ⚖️ CADRE LÉGAL & ÉTHIQUE
 
