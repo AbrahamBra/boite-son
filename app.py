@@ -387,46 +387,42 @@ st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;
 if api_key:
     genai.configure(api_key=api_key)
     
-    # --- GESTION DU PDF (Corrigée pour permettre la mise à jour) ---
+    # 1. GESTION DU PDF (Upload propre)
     if uploaded_pdf:
-        # On vérifie si c'est un nouveau fichier ou si on n'a pas encore de ref
+        # On vérifie si c'est un nouveau fichier
         if "current_pdf_name" not in st.session_state or st.session_state.current_pdf_name != uploaded_pdf.name:
-            with st.status(f"Traitement du manuel : {uploaded_pdf.name}...", expanded=False) as status:
+            with st.status("Traitement du manuel...", expanded=False) as status:
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
                     t.write(uploaded_pdf.getvalue())
                     p = t.name
                 
-                # Upload vers Gemini
                 r = upload_pdf_to_gemini(p)
-                
                 if r: 
                     st.session_state.pdf_ref = r
-                    st.session_state.current_pdf_name = uploaded_pdf.name # On mémorise le nom pour éviter de re-uploader
-                    status.update(label="✅ Manuel assimilé par l'IA", state="complete")
-                else:
-                    st.error("Échec de l'upload du manuel vers Google.")
+                    st.session_state.current_pdf_name = uploaded_pdf.name
+                    status.update(label="✅ Manuel assimilé", state="complete")
 
-    # --- GESTION DE L'AUDIO (Nouvelle méthode via Upload API) ---
+    # 2. GESTION DE L'AUDIO (C'est ici que ça bloquait avant)
+    # On doit uploader le fichier vers l'API, pas juste envoyer les bytes
     if "current_audio_path" in st.session_state:
-        # On vérifie si on a déjà uploadé cet audio spécifique vers Gemini
         if "audio_ref" not in st.session_state or st.session_state.get("last_uploaded_audio") != st.session_state.current_audio_name:
-             with st.status("Analyse spectrale du fichier audio...", expanded=False) as status:
+             with st.status("Analyse du spectre audio...", expanded=False) as status:
                 try:
-                    # Upload vers Gemini (beaucoup plus fiable que les bytes bruts)
+                    # Upload vers Gemini
                     audio_file_ref = genai.upload_file(path=st.session_state.current_audio_path)
                     
-                    # Attente que le fichier soit prêt (ACTIVE)
+                    # Attente que le fichier soit prêt (état ACTIVE)
                     while audio_file_ref.state.name == "PROCESSING":
                         time.sleep(1)
                         audio_file_ref = genai.get_file(audio_file_ref.name)
                         
                     st.session_state.audio_ref = audio_file_ref
                     st.session_state.last_uploaded_audio = st.session_state.current_audio_name
-                    status.update(label="✅ Audio prêt pour analyse", state="complete")
+                    status.update(label="✅ Audio prêt pour l'IA", state="complete")
                 except Exception as e:
                     st.error(f"Erreur upload audio : {e}")
 
-    # --- HISTORIQUE DU CHAT ---
+    # 3. AFFICHAGE HISTORIQUE
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     
@@ -434,9 +430,8 @@ if api_key:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
-    # --- INPUT UTILISATEUR ---
+    # 4. INPUT UTILISATEUR
     prompt = None
-    # (Boutons de suggestion...)
     if not st.session_state.chat_history:
         col1, col2, col3 = st.columns(3)
         if col1.button(T["sugg_1"], type="secondary", use_container_width=True): prompt = T["sugg_1"]
@@ -447,22 +442,22 @@ if api_key:
     if user_input:
         prompt = user_input
 
-    # --- GÉNÉRATION DE LA RÉPONSE ---
+    # 5. GÉNÉRATION (Version Stable)
     if prompt:
         with st.chat_message("user"):
             st.markdown(prompt)
         st.session_state.chat_history.append({"role": "user", "content": prompt})
         
-        # Tools (Google Search)
-        try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
-        except: tools = None
+        # Tools (Google Search désactivé si erreur, sinon garder la ligne)
+        tools = None 
+        # Si tu veux la recherche web, décommente la ligne suivante :
+        # tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         
-        # Contexte mémoire
+        # Contexte Mémoire
         memory_context = ""
         if "memory_content" in st.session_state:
-            memory_context = f"## CONTEXTE MÉMOIRE (Session précédente)\n{st.session_state.memory_content}\n"
+            memory_context = f"## CONTEXTE MÉMOIRE\n{st.session_state.memory_content}\n"
 
-        # Prompt système
         sys_prompt = build_system_prompt(
             lang=lang,
             style_tone=style_tone,
@@ -471,35 +466,21 @@ if api_key:
             has_manual="pdf_ref" in st.session_state
         )
         
-        # --- INITIALISATION DU MODÈLE ---
-        # On force l'utilisation de gemini-1.5-flash qui est le plus stable
-        model_name = "gemini-1.5-flash"
+        # MODÈLE : On utilise uniquement FLASH (Le plus robuste)
+        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt, tools=tools)
         
-        try:
-            # Création du modèle
-            model = genai.GenerativeModel(
-                model_name, 
-                system_instruction=sys_prompt, 
-                tools=tools
-            )
-        except Exception as e:
-            st.error(f"Erreur d'initialisation du modèle : {e}")
-            st.stop()
-        
-        # --- CONSTRUCTION DE LA REQUÊTE (C'est ici que tout se joue) ---
+        # CONSTRUCTION DE LA REQUÊTE
+        # L'ordre est important : D'abord les fichiers (Contexte), ensuite la question
         req = []
         
-        # 1. D'abord le Manuel (Contexte de fond)
         if "pdf_ref" in st.session_state:
             req.append(st.session_state.pdf_ref)
-            req.append("Voici le manuel technique de la machine pour référence.")
+            req.append("Manuel technique (référence).")
             
-        # 2. Ensuite l'Audio (Le sujet de l'analyse)
         if "audio_ref" in st.session_state:
             req.append(st.session_state.audio_ref)
-            req.append("Voici le fichier audio à analyser. Concentre-toi sur le timbre, les fréquences et les effets.")
+            req.append("Fichier audio à analyser (écoute attentivement).")
             
-        # 3. Enfin la question (L'instruction)
         req.append(prompt)
 
         with st.chat_message("assistant"):
@@ -507,11 +488,10 @@ if api_key:
                 try:
                     resp = model.generate_content(req)
                     text_resp = resp.text
-                    
                     st.markdown(text_resp)
                     st.session_state.chat_history.append({"role": "assistant", "content": text_resp})
                 except Exception as e:
-                    st.error(f"Erreur IA : {e}")
+                    st.error(f"Erreur : {e}")
 
 else:
-    st.sidebar.warning(" Cle API requise / API Key needed")
+    st.sidebar.warning("⚠️ Clé API requise / API Key needed")
