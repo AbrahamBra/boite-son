@@ -273,7 +273,7 @@ with st.sidebar:
     lang = st.selectbox("Langue / Language", list(TR.keys()), label_visibility="collapsed")
     T = TR.get(lang, TR["Français 🇫🇷"])
     
-    # 1. SETUP
+    # 1. CONFIGURATION
     st.markdown(f"### {T['settings']}")
     api_key = st.text_input(T["api_label"], type="password", placeholder="AIzaSy...")
     with st.expander(T["api_help"]):
@@ -282,9 +282,10 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # 2. MACHINE (MANUEL)
-    st.markdown(f"### {T['doc_section']}")
+    # 2. FICHIERS (tout regroupé)
+    st.markdown("### 2. 📁 Fichiers" if lang == "Français 🇫🇷" else "### 2. 📁 Files")
     
+    # Helper pour trouver les manuels
     with st.expander(T["doc_help"]):
         MANUAL_LINKS = {
             "Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii",
@@ -298,9 +299,50 @@ with st.sidebar:
         machine = st.selectbox("Machine", list(MANUAL_LINKS.keys()), label_visibility="collapsed")
         st.link_button(f"⬇️ {machine}", MANUAL_LINKS[machine], use_container_width=True)
     
-    uploaded_pdf = st.file_uploader(T["manual_upload"], type=["pdf"], label_visibility="collapsed")
+    # Upload 1 : Manuel PDF
+    st.caption("📄 Manuel de votre machine" if lang == "Français 🇫🇷" else "📄 Your gear manual")
+    uploaded_pdf = st.file_uploader(
+        "Manuel PDF", 
+        type=["pdf"], 
+        label_visibility="collapsed",
+        key="pdf_upload"
+    )
     if uploaded_pdf:
         st.success(T["manual_loaded"])
+    
+    # Upload 2 : Son à analyser
+    st.caption("🎵 Son à analyser" if lang == "Français 🇫🇷" else "🎵 Sound to analyze")
+    uploaded_audio = st.file_uploader(
+        "Audio", 
+        type=["mp3", "wav", "m4a"], 
+        label_visibility="collapsed",
+        key="audio_upload"
+    )
+    if uploaded_audio:
+        if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
+            suffix = f".{uploaded_audio.name.split('.')[-1]}"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                tmp.write(uploaded_audio.getvalue())
+                st.session_state.current_audio_path = tmp.name
+                st.session_state.current_audio_name = uploaded_audio.name
+                st.rerun()
+    
+    if "current_audio_name" in st.session_state:
+        st.success(f"✅ {st.session_state.current_audio_name}")
+        st.audio(st.session_state.current_audio_path)
+    
+    # Upload 3 : Session précédente
+    with st.expander("💾 " + ("Reprendre une session" if lang == "Français 🇫🇷" else "Resume session")):
+        st.caption(T["memory_desc"])
+        uploaded_memory = st.file_uploader(
+            "Session .txt", 
+            type=["txt"], 
+            label_visibility="collapsed",
+            key="mem_upload"
+        )
+        if uploaded_memory:
+            st.session_state.memory_content = uploaded_memory.getvalue().decode("utf-8")
+            st.success(T["session_reloaded"])
 
     st.markdown("---")
     
@@ -309,25 +351,6 @@ with st.sidebar:
     style_tone = st.selectbox("Ton", T["tones"], index=0, label_visibility="collapsed")
     style_format = st.radio("Format", T["formats"], index=0, label_visibility="collapsed")
 
-    st.markdown("---")
-
-    # 4. SESSION & MÉMOIRE
-    st.markdown(f"### {T['memory_title']}")
-    
-    with st.expander(T["memory_help"]):
-        st.info(T["memory_desc"])
-    
-    uploaded_memory = st.file_uploader(
-        T["memory_load"], 
-        type=["txt"], 
-        key="mem_up",
-        help="Glissez le fichier .txt téléchargé lors d'une session précédente"
-    )
-    
-    if uploaded_memory:
-        st.session_state.memory_content = uploaded_memory.getvalue().decode("utf-8")
-        st.success(T["session_reloaded"])
-    
     st.markdown("---")
     
     # FOOTER : ACTIONS
@@ -354,34 +377,13 @@ with st.sidebar:
 st.title(T["title"])
 st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;'>{T['subtitle']}</h3>", unsafe_allow_html=True)
 
-# Onboarding Pédagogique
+# Onboarding si pas de clé API
 if not api_key:
     st.info(T["onboarding"])
 
-# ZONE AUDIO
-with st.container(border=True):
-    st.subheader(T["audio_title"])
-    st.caption(T["audio_subtitle"])
-    
-    uploaded_audio = st.file_uploader(T["audio_label"], type=["mp3", "wav", "m4a"], label_visibility="collapsed")
-    
-    if not uploaded_audio:
-        st.caption(T["legal"])
-    
-    if uploaded_audio:
-        if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
-            suffix = f".{uploaded_audio.name.split('.')[-1]}"
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-                tmp.write(uploaded_audio.getvalue())
-                st.session_state.current_audio_path = tmp.name
-                st.session_state.current_audio_name = uploaded_audio.name
-                st.rerun()
+# ========== TON CODE "LOGIC" VA ICI ==========
+# (Celui que tu m'as montré, copie-le tel quel en dessous)
 
-    if "current_audio_path" in st.session_state:
-        st.success(f"{T['active_track']} **{st.session_state.get('current_audio_name', 'Inconnu')}**")
-        st.audio(st.session_state.current_audio_path)
-
-# --- LOGIC ---
 if api_key:
     genai.configure(api_key=api_key)
     
