@@ -603,7 +603,7 @@ st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;
 # Onboarding si pas de cle API
 # Onboarding si pas de clé API
 if not api_key:
-    st.markdown(f"""
+    st.info(T["onboarding"])
     <div style="
         background: linear-gradient(135deg, rgba(30,30,35,0.8) 0%, rgba(20,20,25,0.9) 100%);
         border-left: 3px solid #888;
