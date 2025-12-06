@@ -471,16 +471,20 @@ if api_key:
             has_manual="pdf_ref" in st.session_state
         )
         
-        # Choix du modèle (Si le modèle expérimental bug, replis-toi sur le 1.5 Pro)
+        # --- INITIALISATION DU MODÈLE ---
+        # On force l'utilisation de gemini-1.5-flash qui est le plus stable
+        model_name = "gemini-1.5-flash"
+        
         try:
-            model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt, tools=tools)
+            # Création du modèle
+            model = genai.GenerativeModel(
+                model_name, 
+                system_instruction=sys_prompt, 
+                tools=tools
+            )
         except Exception as e:
-            # Si Flash échoue, on tente une version spécifique du Pro
-            try:
-                model = genai.GenerativeModel("gemini-1.5-pro-latest", system_instruction=sys_prompt, tools=tools)
-            except:
-                st.error("Impossible d'initialiser le modèle IA. Vérifiez votre clé API.")
-                st.stop()
+            st.error(f"Erreur d'initialisation du modèle : {e}")
+            st.stop()
         
         # --- CONSTRUCTION DE LA REQUÊTE (C'est ici que tout se joue) ---
         req = []
