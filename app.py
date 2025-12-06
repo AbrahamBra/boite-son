@@ -269,116 +269,77 @@ with st.sidebar:
         st.session_state.chat_history = []
         st.rerun()
 
- C. MAIN UI (ORDRE CRUCIAL : CHAT -> FICHIERS -> INPUT)
-
+# C. MAIN UI
 st.title(T["title"])
 st.caption(T["subtitle"])
 
 if not api_key:
     st.warning("⚠️ Clé API requise à gauche.")
 else:
-    # 1. AFFICHER LE CHAT (TOUJOURS EN PREMIER)
+    # AFFICHER CHAT
     chat_container = st.container()
     with chat_container:
         for m in st.session_state.chat_history:
             with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    # 2. TRAITEMENT DES FICHIERS (INVISIBLE ou SIDEBAR)
-    
-    # PDF
-    if uploaded_pdf and "pdf_ref" not in st.session_state:
-        with st.sidebar.status("Lecture Manuel..."):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
-                t.write(uploaded_pdf.getvalue()); path=t.name
-            ref = genai.upload_file(path, mime_type="application/pdf")
-            while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
-            st.session_state.pdf_ref = ref
-            st.session_state.auto_trigger = "AUTO_MANUAL"
-            st.session_state.chat_history.append({"role": "user", "content": "📂 Manuel chargé."})
-            st.rerun()
-
-    # AUDIO (CORRIGÉ : AVEC VARIABLE D'ETAT POUR EVITER LE FLASH)
-    if uploaded_audio:
-        if "last_audio" not in st.session_state or st.session_state.last_audio != uploaded_audio.name:
-            with st.sidebar.status("Analyse Audio..."):
-                suffix = f".{uploaded_audio.name.split('.')[-1]}"
-                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as t:
-                    t.write(uploaded_audio.getvalue()); path=t.name
-                ref = genai.upload_file(path)
-                while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
-                st.session_state.audio_ref = ref
-                st.session_state.last_audio = uploaded_audio.name
-                st.session_state.auto_trigger = "AUTO_ANALYSE"
-                st.session_state.chat_history.append({"role": "user", "content": f"🎧 Analyse : {uploaded_audio.name}"})
-                st.rerun()
-
-    # ESSAI
-    if uploaded_try:
-        if "last_try" not in st.session_state or st.session_state.last_try != uploaded_try.name:
-             with st.sidebar.status("Comparaison..."):
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as t:
-                    t.write(uploaded_try.getvalue()); path=t.name
-                ref = genai.upload_file(path)
-                while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
-                st.session_state.try_ref = ref
-                st.session_state.last_try = uploaded_try.name
-                st.session_state.auto_trigger = "AUTO_COACH"
-                st.session_state.chat_history.append({"role": "user", "content": "🧪 Je soumets mon essai."})
-                st.rerun()
-
-    # 3. INPUT & GENERATION
+    # GESTION TRIGGERS AUTOMATIQUES
     prompt = None
     trigger = st.session_state.get("auto_trigger")
 
-    if trigger:
-        if trigger == "AUTO_MANUAL": prompt = "👋 [AUTO] Manuel reçu."
-        elif trigger == "AUTO_ANALYSE": prompt = "🔥 [AUTO] Analyse ce son."
-        elif trigger == "AUTO_COACH": prompt = "⚖️ [AUTO] Corrige-moi."
+    if trigger == "AUTO_MANUAL":
+        prompt = "👋 [SYSTÈME] J'ai chargé le manuel. Dis-moi que tu es prêt et demande quel est mon objectif."
+        st.session_state.auto_trigger = None 
+
+    elif trigger == "AUTO_ANALYSE":
+        prompt = "🔥 [SYSTÈME] Analyse ce fichier audio. Identifie les éléments (Kick, Snare, Basse, etc.) et demande-moi par lequel je veux commencer."
+        st.session_state.auto_trigger = None 
+
+    elif trigger == "AUTO_COACH":
+        prompt = "⚖️ [SYSTÈME] J'ai envoyé mon essai. Corrige-moi."
         st.session_state.auto_trigger = None
+    
     else:
-        user_input = st.chat_input(T["placeholder"], key="main_input")
+        # INPUT UTILISATEUR STANDARD
+        user_input = st.chat_input(T["placeholder"], key="user_chat_input")
         if user_input:
             prompt = user_input
-            # Ajout immédiat à l'historique visuel
+            with chat_container:
+                with st.chat_message("user"): st.markdown(prompt)
             st.session_state.chat_history.append({"role": "user", "content": prompt})
-            # Petit hack pour forcer l'affichage immédiat du message user avant la réponse IA
-            st.rerun()
 
-    # Si on a un prompt (soit trigger, soit user input récupéré de l'historique récent)
-    # Note : Le rerun ci-dessus permet d'afficher le message user, puis on revient ici.
-    # Pour l'IA, on regarde si le dernier message est de l'user et si l'IA n'a pas encore répondu.
-    last_msg = st.session_state.chat_history[-1] if st.session_state.chat_history else None
-    
-    if last_msg and last_msg["role"] == "user":
-        # On génère la réponse
+    # GENERATION IA
+    if prompt:
         with chat_container:
             with st.chat_message("assistant"):
-                with st.spinner(f"Thinking ({model_name})..."):
+                with st.spinner(T["analyzing"]):
                     try:
-                        ctx = format_history_for_context(st.session_state.chat_history[:-1])
+                        # 1. Récupérer l'historique
+                        chat_context = format_history_for_context(st.session_state.chat_history)
                         
-                        sys = build_system_prompt(
-                            style_tone, user_level, 
+                        # 2. Construire le prompt
+                        sys_prompt = build_system_prompt(
+                            "Français", style_tone, user_level, 
                             "pdf_ref" in st.session_state,
-                            ctx,
+                            chat_context,
                             trigger_mode=trigger if trigger else "VISION" if "vision_ref" in st.session_state else None
                         )
 
+                        # 3. Requête
                         req = []
                         if "pdf_ref" in st.session_state: req.append(st.session_state.pdf_ref)
-                        if "audio_ref" in st.session_state: req.extend(["AUDIO CIBLE:", st.session_state.audio_ref])
-                        if "try_ref" in st.session_state: req.extend(["ESSAI:", st.session_state.try_ref])
-                        if "vision_ref" in st.session_state: req.extend(["PHOTO:", st.session_state.vision_ref])
+                        if "audio_ref" in st.session_state: req.extend(["Voici le fichier audio cible :", st.session_state.audio_ref])
+                        if "try_ref" in st.session_state: req.extend(["Voici l'essai utilisateur :", st.session_state.try_ref])
+                        if "vision_ref" in st.session_state: req.extend(["Voici la photo des réglages :", st.session_state.vision_ref])
                         
-                        # On envoie le dernier contenu utilisateur
-                        req.append(last_msg["content"])
+                        req.append(prompt)
 
-                        model = genai.GenerativeModel(model_name, system_instruction=sys)
+                        # 4. Appel Modèle (Utilisation du modèle stable ou expérimental selon ton choix)
+                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
                         resp = model.generate_content(req)
                         
+                        # 5. Affichage et Sauvegarde
                         st.markdown(resp.text)
                         st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
-                        # Pas de rerun ici, sinon on boucle
                         
                     except Exception as e:
-                        st.error(f"Erreur : {e}")
+                        st.error(f"Erreur IA : {e}")
