@@ -200,7 +200,6 @@ with st.sidebar:
     T = TR[lang]
     
     # 2. Settings de base
-    st.image("logo.png", width=80) 
     st.title(T["settings"])
     api_key = st.text_input("API Key", type="password")
     with st.expander(T["api_help"]):
@@ -237,10 +236,18 @@ with st.sidebar:
     st.link_button(T["buy_coffee"], "https://www.buymeacoffee.com/", use_container_width=True)
 
 # --- MAIN PAGE ---
-col1, col2 = st.columns([5, 1])
+# On crée deux colonnes : une large pour le texte (5), une petite pour le logo (1)
+col1, col2 = st.columns([5, 1], gap="small")
+
 with col1:
+    # Le Titre à gauche
     st.title(T["title"])
     st.caption(T["caption"])
+
+with col2:
+    # Le Logo à droite
+    # 'use_column_width=False' permet de garder la taille fixée (100px)
+    st.image("logo.png", width=100)
 
 # --- AUDIO ZONE ---
 with st.container(border=True):
