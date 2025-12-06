@@ -348,6 +348,26 @@ with st.sidebar:
     # 4. DOCUMENTATION
     st.markdown("---")
     st.info(T["doc_label"])
+    
+    # --- NOUVEAU : HELPER LIENS RAPIDES ---
+    with st.expander("🔍 Trouver mon manuel / Find Manual"):
+        MANUAL_LINKS = {
+            "Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii",
+            "Roland SP-404 MKII": "https://www.roland.com/global/products/sp-404mk2/support/",
+            "TE EP-133 K.O. II": "https://teenage.engineering/downloads/ep-133",
+            "Korg Volca Sample 2": "https://www.korg.com/us/support/download/product/0/867/",
+            "Akai MPC One/Live": "https://www.akaipro.com/mpc-one",
+            "Novation Circuit Tracks": "https://downloads.novationmusic.com/novation/circuit/circuit-tracks",
+            "Arturia MicroFreak": "https://www.arturia.com/products/hardware-synths/microfreak/resources"
+        }
+        
+        selected_machine = st.selectbox("Machine:", list(MANUAL_LINKS.keys()))
+        
+        st.markdown("1. Download PDF:")
+        st.link_button(f"⬇️ {selected_machine} Official Site", MANUAL_LINKS[selected_machine], use_container_width=True)
+        st.markdown("2. Drag & Drop PDF below 👇")
+    # ----------------------------------------
+
     uploaded_pdf = st.file_uploader("PDF", type=["pdf"], label_visibility="collapsed")
     
     st.markdown("---")
@@ -359,6 +379,10 @@ with st.sidebar:
             
     st.markdown(f"### {T['support']}")
     st.link_button(T["buy_coffee"], "https://www.buymeacoffee.com/", use_container_width=True)
+
+# --- MAIN PAGE ---
+st.title(f"🎹 {T['title']}")
+st.caption(T["caption"])
 
 # --- MAIN PAGE ---
 st.title(f"🎹 {T['title']}")
