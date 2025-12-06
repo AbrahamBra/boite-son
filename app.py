@@ -52,7 +52,7 @@ def apply_theme(theme_name):
 
 apply_theme(st.session_state.current_theme)
 
-# --- 3. DICTIONNAIRE MULTILINGUE (AVEC EXPLICATIONS "HOW TO") ---
+# --- 3. DICTIONNAIRE MULTILINGUE (Mis à jour : Éthique & Pédagogie) ---
 TR = {
     "Français 🇫🇷": {
         "settings": "Réglages",
@@ -67,7 +67,9 @@ TR = {
         "buy_coffee": "☕ Offrir un café",
         "title": "Groovebox Tutor AI",
         "caption": "Décrypte le son. Maîtrise ta machine. Crée ton propre grain.",
-        "how_to": "👋 **Bienvenue !**\n1. Charge le **Manuel PDF** de ta machine (menu à gauche).\n2. Glisse un **Fichier Audio** ci-dessous.\n3. L'IA écoute le son, lit le manuel, et t'explique **quels boutons tourner** pour obtenir ce résultat.",
+        # --- MODIFICATION ICI ---
+        "how_to": "👋 **Bienvenue !**\n1. Charge le **Manuel PDF** (menu à gauche).\n2. Glisse un **Fichier Audio** ci-dessous.\n3. L'IA analyse la texture, consulte le manuel et t'explique **les concepts techniques** pour t'approcher de ce style (comprendre pour mieux créer).",
+        # ------------------------
         "audio_title": "🎧 Source Audio",
         "audio_desc": "Importe un fichier audio (MP3, WAV, M4A) pour l'analyser.",
         "drop_label": "Glisse ton fichier ici",
@@ -98,7 +100,7 @@ TR = {
         "buy_coffee": "☕ Buy a coffee",
         "title": "Groovebox Tutor AI",
         "caption": "Decode the sound. Master your machine. Craft your tone.",
-        "how_to": "👋 **Welcome!**\n1. Upload your machine's **PDF Manual** (sidebar).\n2. Drop an **Audio File** below.\n3. The AI listens to the sound, reads the manual, and tells you **exactly which knobs to turn** to recreate it.",
+        "how_to": "👋 **Welcome!**\n1. Upload the **PDF Manual** (sidebar).\n2. Drop an **Audio File** below.\n3. The AI analyzes the texture, checks the manual, and explains **the technical concepts** to achieve this style (understand to create).",
         "audio_title": "🎧 Audio Source",
         "audio_desc": "Upload an audio file (MP3, WAV, M4A) to analyze.",
         "drop_label": "Drop your file here",
@@ -129,7 +131,7 @@ TR = {
         "buy_coffee": "☕ Invítame un café",
         "title": "Groovebox Tutor AI",
         "caption": "Decodifica el sonido. Domina tu máquina. Crea tu propio tono.",
-        "how_to": "👋 **¡Bienvenido!**\n1. Sube el **Manual PDF** de tu máquina (barra lateral).\n2. Arrastra un **Archivo de Audio** abajo.\n3. La IA escucha el sonido, lee el manual y te dice **qué botones tocar**.",
+        "how_to": "👋 **¡Bienvenido!**\n1. Sube el **Manual PDF** (barra lateral).\n2. Arrastra un **Archivo de Audio** abajo.\n3. La IA analiza la textura, consulta el manual y explica **los conceptos técnicos** para lograr este estilo (entender para crear).",
         "audio_title": "🎧 Fuente de Audio",
         "audio_desc": "Sube un archivo de audio (MP3, WAV, M4A) para analizar.",
         "drop_label": "Arrastra tu archivo aquí",
@@ -160,7 +162,7 @@ TR = {
         "buy_coffee": "☕ Spendier mir einen Kaffee",
         "title": "Groovebox Tutor AI",
         "caption": "Entschlüssle den Sound. Beherrsche deine Maschine.",
-        "how_to": "👋 **Willkommen!**\n1. Lade das **PDF-Handbuch** (links).\n2. Lade eine **Audiodatei** hoch (unten).\n3. Die KI hört den Sound, liest das Handbuch und erklärt dir **genau, welche Knöpfe du drehen musst**.",
+        "how_to": "👋 **Willkommen!**\n1. Lade das **PDF-Handbuch** (links).\n2. Lade eine **Audiodatei** hoch (unten).\n3. Die KI analysiert die Textur, prüft das Handbuch und erklärt **die technischen Konzepte**, um diesen Stil zu erreichen (Verstehen statt Kopieren).",
         "audio_title": "🎧 Audioquelle",
         "audio_desc": "Lade eine Audiodatei (MP3, WAV, M4A) zur Analyse hoch.",
         "drop_label": "Datei hier ablegen",
@@ -191,7 +193,7 @@ TR = {
         "buy_coffee": "☕ Offrimi un caffè",
         "title": "Groovebox Tutor AI",
         "caption": "Decodifica il suono. Padroneggia la macchina.",
-        "how_to": "👋 **Benvenuto!**\n1. Carica il **Manuale PDF** (a sinistra).\n2. Trascina un **File Audio** qui sotto.\n3. L'IA ascolta il suono, legge il manuale e ti spiega **quali pulsanti usare**.",
+        "how_to": "👋 **Benvenuto!**\n1. Carica il **Manuale PDF** (a sinistra).\n2. Trascina un **File Audio** qui sotto.\n3. L'IA analizza la struttura, consulta il manuale e spiega **i concetti tecnici** per ottenere questo stile (capire per creare).",
         "audio_title": "🎧 Sorgente Audio",
         "audio_desc": "Carica un file audio (MP3, WAV) per analizzarlo.",
         "drop_label": "Trascina qui il file",
@@ -222,7 +224,7 @@ TR = {
         "buy_coffee": "☕ Me paga um café",
         "title": "Groovebox Tutor AI",
         "caption": "Decodifique o som. Domine sua máquina.",
-        "how_to": "👋 **Bem-vindo!**\n1. Envie o **Manual PDF** (à esquerda).\n2. Arraste um **Arquivo de Áudio** abaixo.\n3. A IA escuta o som, lê o manual e explica **quais botões usar**.",
+        "how_to": "👋 **Bem-vindo!**\n1. Envie o **Manual PDF** (à esquerda).\n2. Arraste um **Arquivo de Áudio** abaixo.\n3. A IA analisa a textura, consulta o manual e explica **os conceitos técnicos** para atingir esse estilo (entender para criar).",
         "audio_title": "🎧 Fonte de Áudio",
         "audio_desc": "Envie um arquivo de áudio (MP3, WAV) para análise.",
         "drop_label": "Arraste seu arquivo aqui",
@@ -253,7 +255,7 @@ TR = {
         "buy_coffee": "☕ コーヒーを奢る",
         "title": "Groovebox Tutor AI",
         "caption": "音を解読し、マシンをマスターしよう。",
-        "how_to": "👋 **ようこそ！**\n1. 左のメニューから**PDFマニュアル**をアップロード。\n2. 下に**オーディオファイル**をドロップ。\n3. AIが音を聴き、マニュアルを読み、**どのノブを回せばいいか**を教えます。",
+        "how_to": "👋 **ようこそ！**\n1. 左のメニューから**PDFマニュアル**をアップロード。\n2. 下に**オーディオファイル**をドロップ。\n3. AIが音の質感を分析し、マニュアルを参照して、そのスタイルに近づけるための**技術的な概念**を説明します（コピーではなく、創造のために）。",
         "audio_title": "🎧 音源",
         "audio_desc": "分析するオーディオファイル(MP3, WAV)をアップロード。",
         "drop_label": "ここにファイルをドロップ",
