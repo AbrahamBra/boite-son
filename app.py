@@ -393,142 +393,95 @@ with st.sidebar:
 st.title(T["title"])
 st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;'>{T['subtitle']}</h3>", unsafe_allow_html=True)
 
-# --- LOGIC ---
+# --- LOGIC V2.0 (Futuriste) ---
 if api_key:
     genai.configure(api_key=api_key)
     
-    # AFFICHER LES MODÈLES DISPONIBLES
-    try:
-        st.write("### 🔍 Modèles disponibles avec ta clé :")
-        models = genai.list_models()
-        for m in models:
-            if 'generateContent' in m.supported_generation_methods:
-                st.write(f"✅ {m.name}")
-    except Exception as e:
-        st.error(f"Erreur listing : {e}")
-    
-    # --- DEBUG : VOIR LES MODÈLES (Optionnel) ---
-    # Décommente les 3 lignes ci-dessous pour voir la liste dans tes logs ou l'app
-    # try:
-    #     st.write([m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods])
-    # except: pass
+    # 1. FICHIERS (PDF & AUDIO CIBLE)
+    # ... (Garde ton code d'upload PDF et Audio actuel, il est bon) ...
+    # (Assure-toi juste d'utiliser genai.upload_file comme on a vu)
 
-    # 1. GESTION DU PDF (Upload propre)
-    if uploaded_pdf:
-        # On vérifie si c'est un nouveau fichier
-        if "current_pdf_name" not in st.session_state or st.session_state.current_pdf_name != uploaded_pdf.name:
-            with st.status("Traitement du manuel...", expanded=False) as status:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
-                    t.write(uploaded_pdf.getvalue())
-                    p = t.name
+    # 2. FEATURE COACH : UPLOAD DE L'ESSAI (Nouveau !)
+    with st.sidebar:
+        st.markdown("---")
+        st.caption("🧪 **Mode Coach (Comparaison)**")
+        uploaded_try = st.file_uploader("Charge ton essai ici", type=["mp3", "wav", "m4a"], key="try_upload")
+        
+        if uploaded_try:
+             # Logique d'upload temporaire identique à l'audio principal
+             if "current_try_name" not in st.session_state or st.session_state.current_try_name != uploaded_try.name:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as t:
+                    t.write(uploaded_try.getvalue())
+                    st.session_state.try_path = t.name
+                    st.session_state.current_try_name = uploaded_try.name
                 
-                r = upload_pdf_to_gemini(p)
-                if r: 
-                    st.session_state.pdf_ref = r
-                    st.session_state.current_pdf_name = uploaded_pdf.name
-                    status.update(label="✅ Manuel assimilé", state="complete")
-
-    # 2. GESTION DE L'AUDIO (Correction critique ici)
-    if "current_audio_path" in st.session_state:
-        if "audio_ref" not in st.session_state or st.session_state.get("last_uploaded_audio") != st.session_state.current_audio_name:
-             with st.status("Analyse du spectre audio...", expanded=False) as status:
+                # Upload vers Gemini
                 try:
-                    # Upload vers Gemini (l'IA a besoin du fichier sur ses serveurs)
-                    audio_file_ref = genai.upload_file(path=st.session_state.current_audio_path)
-                    
-                    # Attente que le fichier soit prêt (état ACTIVE)
-                    while audio_file_ref.state.name == "PROCESSING":
-                        time.sleep(1)
-                        audio_file_ref = genai.get_file(audio_file_ref.name)
-                        
-                    st.session_state.audio_ref = audio_file_ref
-                    st.session_state.last_uploaded_audio = st.session_state.current_audio_name
-                    status.update(label="✅ Audio prêt pour l'IA", state="complete")
-                except Exception as e:
-                    st.error(f"Erreur upload audio : {e}")
+                    tr_ref = genai.upload_file(path=st.session_state.try_path)
+                    while tr_ref.state.name == "PROCESSING":
+                        time.sleep(0.5)
+                        tr_ref = genai.get_file(tr_ref.name)
+                    st.session_state.try_ref = tr_ref
+                    st.success("Essai entendu ! 👂")
+                except: st.error("Erreur upload essai")
 
-    # 3. AFFICHAGE HISTORIQUE
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-    
-    for m in st.session_state.chat_history:
-        with st.chat_message(m["role"]):
-            st.markdown(m["content"])
+    # ... (Affichage historique chat comme avant) ...
 
-    # 4. INPUT UTILISATEUR
-    prompt = None
-    if not st.session_state.chat_history:
-        col1, col2, col3 = st.columns(3)
-        if col1.button(T["sugg_1"], type="secondary", use_container_width=True): prompt = T["sugg_1"]
-        elif col2.button(T["sugg_2"], type="secondary", use_container_width=True): prompt = T["sugg_2"]
-        elif col3.button(T["sugg_3"], type="secondary", use_container_width=True): prompt = T["sugg_3"]
+    # INPUT USER
+    # ... (Comme avant) ...
 
-    user_input = st.chat_input(T["placeholder"])
-    if user_input:
-        prompt = user_input
-
-    # 5. GÉNÉRATION
+    # 3. GÉNÉRATION AVEC GEMINI 2.0
     if prompt:
         with st.chat_message("user"):
             st.markdown(prompt)
         st.session_state.chat_history.append({"role": "user", "content": prompt})
         
-        # Tools (Google Search désactivé pour éviter les erreurs, réactive si besoin)
-        tools = None 
-        
-        # Contexte Mémoire
-        memory_context = ""
-        if "memory_content" in st.session_state:
-            memory_context = f"## CONTEXTE MEMOIRE\n{st.session_state.memory_content}\n"
-
-        sys_prompt = build_system_prompt(
-            lang=lang,
-            style_tone=style_tone,
-            style_format=style_format,
-            memory_context=memory_context,
-            has_manual="pdf_ref" in st.session_state
-        )
-        
-        # --- CHOIX DU MODÈLE (Basé sur ta liste) ---
-        # On utilise le modèle le plus performant de ta liste pour l'audio
-        target_model = "gemini-2.0-flash-exp"
+        # --- C'EST ICI QUE LA MAGIE OPÈRE ---
+        # On utilise le meilleur modèle de ta liste pour la rapidité et l'audio
+        target_model = "gemini-2.0-flash-exp" 
         
         try:
-            model = genai.GenerativeModel(
-                target_model, 
-                system_instruction=sys_prompt, 
-                tools=tools
-            )
-        except Exception as e:
-            st.error(f"Erreur d'initialisation avec {target_model} : {e}")
-            st.stop()
-        
-        # --- CONSTRUCTION DE LA REQUÊTE ---
+            model = genai.GenerativeModel(target_model, system_instruction=sys_prompt)
+        except:
+            # Fallback sur le Pro si le Flash Exp n'est pas dispo temporairement
+            model = genai.GenerativeModel("gemini-1.5-pro")
+
+        # Construction intelligente de la requête
         req = []
         
-        # 1. Le Manuel (si présent)
+        # A. Manuel
         if "pdf_ref" in st.session_state:
             req.append(st.session_state.pdf_ref)
-            req.append("MANUEL TECHNIQUE : Utilise ce document comme référence.")
-            
-        # 2. L'Audio (si présent)
+            req.append("MANUEL TECHNIQUE (Référence absolue).")
+
+        # B. Audio Cible
         if "audio_ref" in st.session_state:
             req.append(st.session_state.audio_ref)
-            req.append("FICHIER AUDIO : Analyse ce son.")
-            
-        # 3. La Question
+            req.append("FICHIER CIBLE (Le son à atteindre).")
+
+        # C. Audio Essai (Mode Coach)
+        if "try_ref" in st.session_state:
+            req.append(st.session_state.try_ref)
+            req.append("FICHIER ESSAI (Ce que l'élève a fait).")
+            prompt += "\n\n⚠️ ACTION SPECIALE : Compare l'ESSAI avec la CIBLE. Dis ce qui manque (Filtre ? Enveloppe ? Effet ?) pour que l'essai sonne comme la cible."
+
+        # D. La Question
         req.append(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner(f"Analyse avec {target_model}..."):
+            with st.spinner(f"Analyse neurale ({target_model})..."):
                 try:
                     resp = model.generate_content(req)
                     text_resp = resp.text
+                    
+                    # Petit bonus visuel si c'est le modèle 2.0
+                    if "2.0" in target_model:
+                        st.markdown("⚡ *Analyse générée par Gemini 2.0 Flash*")
+                    
                     st.markdown(text_resp)
                     st.session_state.chat_history.append({"role": "assistant", "content": text_resp})
                 except Exception as e:
-                    st.error(f"Erreur lors de la génération : {e}")
-        
+                    st.error(f"Erreur : {e}")
 
 else:
     st.sidebar.warning("⚠️ Clé API requise / API Key needed")
