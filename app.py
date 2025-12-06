@@ -473,7 +473,7 @@ Tu maîtrises :
 
 ---
 
-Prêt à analyser ton premier son ! 🎧
+Prêt à analyser ton premier son ! 
 """
     
     return sys_prompt
@@ -600,7 +600,7 @@ with st.sidebar:
 st.title(T["title"])
 st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;'>{T['subtitle']}</h3>", unsafe_allow_html=True)
 
-# Onboarding si pas de clé API
+# Onboarding si pas de cle API
 if not api_key:
     st.markdown(f"""
     <div style='
@@ -611,15 +611,15 @@ if not api_key:
         margin: 2rem 0;
     '>
         <h3 style='color: #FFF; margin-top: 0; font-weight: 300; letter-spacing: 0.5px;'>
-            👋 {'Objectif : Autonomie' if lang == 'Français 🇫🇷' else 'Goal: Autonomy'}
+             {'Objectif : Autonomie' if lang == 'Francais ' else 'Goal: Autonomy'}
         </h3>
         <ol style='color: #CCC; line-height: 1.8; font-size: 1.05rem;'>
-            <li>{'Importez le <strong>Manuel</strong> de votre instrument (à gauche)' if lang == 'Français 🇫🇷' else 'Upload your instrument\'s <strong>Manual</strong> (left sidebar)'}</li>
-            <li>{'Proposez un <strong>Son</strong> qui vous inspire (à gauche aussi)' if lang == 'Français 🇫🇷' else 'Provide a <strong>Sound</strong> that inspires you (left sidebar)'}</li>
-            <li>{'Votre binôme analyse la texture et vous enseigne les <strong>étapes techniques</strong> pour recréer ce grain vous-même' if lang == 'Français 🇫🇷' else 'Your partner analyzes the texture and teaches you <strong>the technical steps</strong>'}</li>
+            <li>{'Importez le <strong>Manuel</strong> de votre instrument (a gauche)' if lang == 'Francais 🇫🇷' else 'Upload your instrument\'s <strong>Manual</strong> (left sidebar)'}</li>
+            <li>{'Proposez un <strong>Son</strong> qui vous inspire (a gauche aussi)' if lang == 'Francais 🇫🇷' else 'Provide a <strong>Sound</strong> that inspires you (left sidebar)'}</li>
+            <li>{'Votre binome analyse la texture et vous enseigne les <strong>etapes techniques</strong> pour recreer ce grain vous-meme' if lang == 'Francais ' else 'Your partner analyzes the texture and teaches you <strong>the technical steps</strong>'}</li>
         </ol>
         <p style='color: #999; font-size: 0.9rem; margin-bottom: 0; margin-top: 1.5rem;'>
-            ⚠️ {'Outil d\'analyse à but éducatif. L\'inspiration est légale, le plagiat ne l\'est pas.' if lang == 'Français 🇫🇷' else 'Educational analysis tool. Inspiration is legal, plagiarism is not.'}
+             {'Outil d\'analyse a but educatif. L\'inspiration est legale, le plagiat ne l\'est pas.' if lang == 'Francais ' else 'Educational analysis tool. Inspiration is legal, plagiarism is not.'}
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -629,7 +629,7 @@ if api_key:
     genai.configure(api_key=api_key)
     
     if uploaded_pdf and "pdf_ref" not in st.session_state:
-        with st.status("Lecture du manuel..." if lang == "Français 🇫🇷" else "Reading manual...", expanded=False) as status:
+        with st.status("Lecture du manuel..." if lang == "Francais " else "Reading manual...", expanded=False) as status:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
                 t.write(uploaded_pdf.getvalue())
                 p = t.name
@@ -671,7 +671,7 @@ if api_key:
         
         memory_context = ""
         if "memory_content" in st.session_state:
-            memory_context = f"## 🧠 CONTEXTE MÉMOIRE\n{st.session_state.memory_content}\n"
+            memory_context = f"##  CONTEXTE MEMOIRE\n{st.session_state.memory_content}\n"
 
         sys_prompt = build_system_prompt(
             lang=lang,
@@ -691,7 +691,7 @@ if api_key:
             mime = get_mime_type(audio_path)
             audio_data = pathlib.Path(audio_path).read_bytes()
             req.append({"mime_type": mime, "data": audio_data})
-            # Ne force PAS l'analyse, laisse Claude décider si c'est pertinent
+            # Ne force PAS l'analyse, laisse Claude decider si c'est pertinent
 
         with st.chat_message("assistant"):
             try:
@@ -701,7 +701,7 @@ if api_key:
                 st.markdown(text_resp)
                 st.session_state.chat_history.append({"role": "assistant", "content": text_resp})
             except Exception as e:
-                st.error(f"Erreur IA : {e}" if lang == "Français 🇫🇷" else f"AI Error: {e}")
+                st.error(f"Erreur IA : {e}" if lang == "Francais " else f"AI Error: {e}")
 
 else:
-    st.sidebar.warning("🔑 Clé API requise / API Key needed")
+    st.sidebar.warning(" Cle API requise / API Key needed")
