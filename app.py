@@ -179,9 +179,17 @@ T = TR["Français 🇫🇷"]
 # B. SIDEBAR
 with st.sidebar:
     st.header(T['settings'])
+    
+    # 1. API & MODÈLE
     api_key = st.text_input(T['api_label'], type="password", key="api_key_sidebar")
+    
+    # AJOUT : Lien pour créer la clé
     with st.expander(T['api_help']):
         st.caption(T['api_desc'])
+        st.link_button("🔑 Créer une clé gratuite", "https://aistudio.google.com/app/apikey", use_container_width=True)
+
+    # AJOUT : Sélecteur de modèle (Gemini 2.0 par défaut)
+    model_name = st.text_input("Modèle IA", value="gemini-2.0-flash-exp", key="model_selector")
 
     if api_key: 
         try:
@@ -196,7 +204,18 @@ with st.sidebar:
     st.markdown("---")
     st.header(T['doc_section'])
     
-    # PDF
+    # AJOUT : Liens rapides manuels
+    with st.expander("📚 Liens Manuels Officiels"):
+        links = {
+            "Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii",
+            "SP-404 MKII": "https://www.roland.com/global/products/sp-404mk2/support/",
+            "MPC Live II": "https://www.akaipro.com/mpc-live-ii",
+            "EP-133 K.O. II": "https://teenage.engineering/downloads/ep-133"
+        }
+        sel = st.selectbox("Choisir machine", list(links.keys()), key="link_sel")
+        st.link_button(f"Télécharger {sel}", links[sel], use_container_width=True)
+    
+    # PDF UPLOADER
     uploaded_pdf = st.file_uploader(T['manual_upload'], type=["pdf"], key="pdf_uploader")
     if uploaded_pdf and "pdf_ref" not in st.session_state and api_key:
         with st.status("Lecture du manuel...", expanded=False):
@@ -210,9 +229,15 @@ with st.sidebar:
     if "pdf_ref" in st.session_state: st.success("✅ Manuel chargé")
 
     st.markdown("---")
+    
     # AUDIO
     st.header(T['audio_title'])
     uploaded_audio = st.file_uploader(T['audio_label'], type=["mp3", "wav", "m4a"], key="audio_uploader")
+    
+    # AJOUT : Lecteur Audio
+    if uploaded_audio:
+        st.audio(uploaded_audio)
+
     if uploaded_audio and api_key:
         if "audio_name" not in st.session_state or st.session_state.audio_name != uploaded_audio.name:
             with st.status("Analyse audio...", expanded=False):
@@ -231,6 +256,11 @@ with st.sidebar:
     with st.expander(T['coach_section']):
         st.caption(T['coach_desc'])
         uploaded_try = st.file_uploader(T['coach_label'], type=["mp3", "wav", "m4a"], key="try_uploader")
+        
+        # AJOUT : Lecteur Audio Essai
+        if uploaded_try:
+            st.audio(uploaded_try)
+
         if uploaded_try and api_key:
             if "try_name" not in st.session_state or st.session_state.get("try_name") != uploaded_try.name:
                  with st.status("Comparaison...", expanded=False):
@@ -262,6 +292,7 @@ with st.sidebar:
         st.toast("Vision active")
 
     st.markdown("---")
+    # AJOUT : Philosophie
     with st.expander(T["about"]):
         st.markdown(T["about_text"])
 
@@ -333,11 +364,11 @@ else:
                         
                         req.append(prompt)
 
-                        # 4. Appel Modèle (Utilisation du modèle stable ou expérimental selon ton choix)
-                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
+                        # 4. Appel Modèle (Stable)
+                        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt)
                         resp = model.generate_content(req)
                         
-                        # 5. Affichage et Sauvegarde
+                        # 5. Affichage
                         st.markdown(resp.text)
                         st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
                         
