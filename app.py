@@ -594,5 +594,3 @@ if api_key:
 
 else:
     st.info("👋 Bienvenue. Entrez votre clé API dans la barre latérale pour activer le Coach.")
-Use Arrow Up and Arrow Down to select a turn, Enter to jump to it, and Escape to return to the chat.
-Start typing a prompt
