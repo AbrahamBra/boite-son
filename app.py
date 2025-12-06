@@ -182,16 +182,23 @@ def build_system_prompt(lang, style_tone, style_format, memory_context, has_manu
     
     # Définition du niveau pédagogique
     if "Débutant" in user_level:
-        level_instr = "NIVEAU DÉBUTANT : Vulgarise tout. N'utilise pas de jargon sans expliquer. Si le fichier audio est complexe (9mn+), propose de le découper."
+        level_instr = """
+        NIVEAU DÉBUTANT : TUTORIEL PAS À PAS (HANDS-ON).
+        L'utilisateur veut manipuler sa machine, pas lire de la théorie.
+        NE DIS PAS : "Ajoute de la reverb pour une ambiance planante".
+        DIS PLUTÔT : "1. Appuie sur le bouton FX (page 50). 2. Tourne le codeur C pour monter la Reverb à 40."
+        Sois impératif et précis. Utilise le manuel pour donner le NOM EXACT des boutons.
+        """
     elif "Expert" in user_level:
-        level_instr = "NIVEAU EXPERT : Sois concis. Donne directement les valeurs (0-127). Pas de blabla."
+        level_instr = "NIVEAU EXPERT : Valeurs brutes (0-127), jargon technique précis, pas d'explications superflues."
     else:
-        level_instr = "NIVEAU INTERMÉDIAIRE : Guide l'utilisateur. Donne les réglages mais laisse-le tourner les boutons."
+        level_instr = "NIVEAU INTERMÉDIAIRE : Guide l'utilisateur sur la structure du son et les modules à utiliser."
 
-    manual_instruction = "Utilise le manuel comme référence. Cite les pages." if has_manual else "Explique les concepts généraux."
+    manual_instruction = "Utilise le manuel comme BIBLE ABSOLUE. Cite les pages." if has_manual else "Utilise tes connaissances générales."
     
-    base = f"""Tu es Groovebox Tutor. MISSION : Enseigner la synthèse sonore.
-    STYLE : {level_instr}
+    base = f"""Tu es Groovebox Tutor.
+    MISSION : Guider l'utilisateur sur sa machine physique.
+    NIVEAU : {level_instr}
     MANUEL : {manual_instruction}
     CONTEXTE : {memory_context}
     """
@@ -289,8 +296,8 @@ with st.sidebar:
     st.markdown("### 🎓 Pédagogie")
     user_level = st.radio(
         "Ton Niveau", 
-        ["Débutant", "Intermédiaire", "Expert"],
-        index=1
+        ["Débutant (Pas à pas)", "Intermédiaire (Guide)", "Expert (Valeurs)"],
+        index=0
     )
     # ---------------------------------
     
@@ -328,7 +335,7 @@ with st.sidebar:
                 st.session_state.current_audio_path = tmp.name
                 st.session_state.current_audio_name = uploaded_audio.name
                 # 🔥 DÉCLENCHEUR PROACTIF
-                st.session_state.auto_trigger = "ANALYSE"
+                st.session_state.auto_trigger = "AUTO_ANALYSE"
                 st.rerun()
     
     if "current_audio_path" in st.session_state:
@@ -351,7 +358,7 @@ with st.sidebar:
                 st.session_state.try_path = t.name
                 st.session_state.current_try_name = uploaded_try.name
                 # 🔥 DÉCLENCHEUR PROACTIF
-                st.session_state.auto_trigger = "COACH"
+                st.session_state.auto_trigger = "AUTO_COACH"
              st.success("✅ Essai prêt")
     
     # --- VISION DEBUG ---
@@ -454,67 +461,86 @@ if api_key:
                     st.toast("✅ Essai reçu !")
                 except: pass
 
-    # 4. AFFICHAGE HISTORIQUE (Doit être AVANT les inputs pour ne pas clignoter)
+    # . AFFICHAGE HISTORIQUE (Doit être AVANT les inputs pour ne pas clignoter)
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
-    
-    for m in st.session_state.chat_history:
-        with st.chat_message(m["role"]): st.markdown(m["content"])
+    # --- CORRECTION BUG : AFFICHAGE DU CHAT EN PREMIER ---
+    # On crée un conteneur pour le chat afin qu'il soit stable
+    chat_container = st.container()
+    with chat_container:
+        for m in st.session_state.chat_history:
+            with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    # --- LOGIQUE DES DÉCLENCHEURS ---
+    # 1. GESTION DES UPLOADS EN ARRIÈRE-PLAN
+    if uploaded_pdf and "pdf_ref" not in st.session_state:
+        with st.status("Lecture Manuel...", expanded=False):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
+                t.write(uploaded_pdf.getvalue()); path=t.name
+            ref = genai.upload_file(path, mime_type="application/pdf")
+            while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
+            st.session_state.pdf_ref = ref
+
+    if "current_audio_path" in st.session_state and "audio_ref" not in st.session_state:
+        with st.status("Analyse Audio...", expanded=False):
+            ref = genai.upload_file(path=st.session_state.current_audio_path)
+            while ref.state.name == "PROCESSING": time.sleep(0.5); ref = genai.get_file(ref.name)
+            st.session_state.audio_ref = ref
+
+    if "try_path" in st.session_state and "try_ref" not in st.session_state:
+        with st.status("Analyse Essai...", expanded=False):
+            ref = genai.upload_file(path=st.session_state.try_path)
+            while ref.state.name == "PROCESSING": time.sleep(0.5); ref = genai.get_file(ref.name)
+            st.session_state.try_ref = ref
+
+    # 2. GESTION DES TRIGGERS & INPUT
     prompt = None
-    # On récupère le trigger défini lors de l'upload (ANALYSE ou COACH)
-    trigger = st.session_state.get("auto_trigger") 
+    trigger = st.session_state.get("trigger")
 
-    if trigger == "ANALYSE":
-        prompt = "🔥 [AUTO] Analyse ce son. Attention à la durée du fichier."
-        with st.chat_message("user"): st.markdown("🎵 *Audio chargé... Analyse en cours*")
-        st.session_state.chat_history.append({"role": "user", "content": "🎵 *Audio chargé... Analyse en cours*"})
-        st.session_state.auto_trigger = None # On reset le trigger
+    if trigger == "AUTO_ANALYSE":
+        prompt = "🔥 [AUTO] Analyse ce fichier. Guide-moi selon mon niveau."
+        # Pas d'affichage user ici pour éviter le doublon visuel immédiat, l'IA répondra direct.
+        st.session_state.trigger = None
 
-    elif trigger == "COACH":
-        prompt = "⚖️ [AUTO] Note mon essai sur 100."
-        with st.chat_message("user"): st.markdown("🧪 *Essai envoyé pour correction*")
-        st.session_state.chat_history.append({"role": "user", "content": "🧪 *Essai envoyé pour correction*"})
-        st.session_state.auto_trigger = None
-
+    elif trigger == "AUTO_COACH":
+        prompt = "⚖️ [AUTO] J'ai envoyé mon essai. Corrige-moi."
+        st.session_state.trigger = None
+    
     else:
-        # Input manuel (si pas de trigger auto)
         user_input = st.chat_input(T["placeholder"])
         if user_input:
             prompt = user_input
-            with st.chat_message("user"): st.markdown(prompt)
+            with chat_container: # On ajoute visuellement tout de suite
+                with st.chat_message("user"): st.markdown(prompt)
             st.session_state.chat_history.append({"role": "user", "content": prompt})
 
-    # 5. GÉNÉRATION IA
+    # 3. GÉNÉRATION IA
     if prompt:
-        with st.chat_message("assistant"):
-            with st.spinner("Réflexion..."):
-                try:
-                    # Contexte
-                    req = []
-                    if "pdf_ref" in st.session_state: req.extend([st.session_state.pdf_ref, "MANUEL"])
-                    if "audio_ref" in st.session_state: req.extend([st.session_state.audio_ref, "SON CIBLE"])
-                    if "try_ref" in st.session_state: req.extend([st.session_state.try_ref, "ESSAI"])
-                    if "vision_ref" in st.session_state: req.extend([st.session_state.vision_ref, "PHOTO"])
-                    req.append(prompt)
+        # On affiche un spinner DANS le container du chat
+        with chat_container:
+            with st.chat_message("assistant"):
+                with st.spinner(TR["Français 🇫🇷"]["analyzing"]):
+                    try:
+                        req = []
+                        if "pdf_ref" in st.session_state: req.extend([st.session_state.pdf_ref, "MANUEL"])
+                        if "audio_ref" in st.session_state: req.extend([st.session_state.audio_ref, "CIBLE"])
+                        if "try_ref" in st.session_state: req.extend([st.session_state.try_ref, "ESSAI"])
+                        if "vision_ref" in st.session_state: req.extend([st.session_state.vision_ref, "PHOTO"])
+                        req.append(prompt)
+                        
+                        sys_prompt = build_system_prompt(
+                            "Français", "Mentor Cool", "Cours Complet", 
+                            st.session_state.get("memory_content", ""), 
+                            "pdf_ref" in st.session_state,
+                            trigger_mode="AUTO_ANALYSE" if trigger == "AUTO_ANALYSE" else "AUTO_COACH" if trigger == "AUTO_COACH" else None,
+                            user_level=user_level
+                        )
 
-                    # Prompt intelligent
-                    sys_prompt = build_system_prompt(
-                        lang, style_tone, style_format, 
-                        st.session_state.get("memory_content", ""), 
-                        "pdf_ref" in st.session_state,
-                        trigger_mode=trigger if trigger else "VISION" if "vision_ref" in st.session_state else None,
-                        user_level=user_level # On passe le niveau choisi
-                    )
-
-                    # Appel Gemini 2.0
-                    model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
-                    resp = model.generate_content(req)
-                    
-                    st.markdown(resp.text)
-                    st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
-                except Exception as e:
-                    st.error(f"Erreur : {e}")
+                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
+                        resp = model.generate_content(req)
+                        
+                        st.markdown(resp.text)
+                        st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
+                    except Exception as e:
+                        st.error(f"Erreur : {e}")
 
 else:
     st.sidebar.warning("⚠️ Clé API requise")
