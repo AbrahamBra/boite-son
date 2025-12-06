@@ -454,8 +454,8 @@ Invite au retour d'expérience.
 
 **IMPORTANT** : Outil **éducatif**, pas un copieur de sons.
 
-- **Inspiration légale** : Analyser les techniques ✅
-- **Plagiat illégal** : Reproduire exactement un preset commercial ❌
+- **Inspiration légale** : Analyser les techniques 
+- **Plagiat illégal** : Reproduire exactement un preset commercial 
 
 Si le son source = preset protégé évident, rappelle :
 "Je vais t'expliquer les TECHNIQUES utilisées, pas te donner une copie conforme. L'objectif est d'apprendre, pas de plagier."
