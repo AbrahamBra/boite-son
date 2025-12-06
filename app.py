@@ -212,7 +212,26 @@ TR = {
         "memory_save": "💾 Télécharger Session",
         "reset": "🔄 Nouvelle Session",
         "about": "📖 Philosophie du projet",
-        "about_text": "**Groovebox Tutor** est un projet libre, né du désir de reconnecter les musiciens avec leurs machines.\n\nNotre but n'est pas de copier, mais de **comprendre**. L'IA agit comme un binôme technique : elle écoute, lit la doc, et vous explique *comment* sculpter votre propre son.\n\nL'outil est gratuit. Si vous apprenez des choses grâce à lui, vous pouvez me soutenir.",
+        "about_text": """**Groovebox Tutor** est né d'une frustration : celle de voir des musiciens acheter des machines incroyables... pour finalement copier des presets trouvés sur Reddit.
+
+### Notre vision
+
+Nous croyons que **comprendre** vaut mieux que **copier**. Que la vraie créativité vient de la maîtrise technique. Que chaque machine mérite qu'on apprenne à lui parler.
+
+### Comment ça marche
+
+L'IA agit comme votre **binôme de studio** :
+- 🎧 Elle écoute votre référence sonore
+- 📖 Elle lit le manuel de votre machine
+- 🎛️ Elle vous guide pour **recréer** le son par vous-même
+
+Pas de preset tout fait. Pas de solution miracle. Juste de la **pédagogie**, étape par étape.
+
+### Pourquoi c'est gratuit ?
+
+Parce que la connaissance doit être accessible. Ce projet est open-source et le restera. Si vous progressez grâce à lui, un café virtuel fait toujours plaisir ☕
+
+*Fait avec ❤️ pour les beatmakers, les sound designers, et tous ceux qui refusent de rester en surface.*""",
         "support": "☕ Soutenir (Don)",
         "title": "Groovebox Tutor",
         "subtitle": "Votre binôme technique. Décryptez le son. Maîtrisez votre machine.",
@@ -248,7 +267,26 @@ TR = {
         "memory_save": "💾 Download Session",
         "reset": "🔄 New Session",
         "about": "📖 Project Philosophy",
-        "about_text": "**Groovebox Tutor** is a free project.\n\nOur goal isn't to copy, but to **understand**. The AI acts like a technical partner: it listens, reads the docs, and explains *how* to craft your own sound.\n\nThe tool is free. If you learn something, you can support me.",
+        "about_text": """**Groovebox Tutor** was born from frustration: watching musicians buy incredible machines... only to copy presets from Reddit.
+
+### Our vision
+
+We believe **understanding** beats **copying**. That real creativity comes from technical mastery. That every machine deserves to be learned properly.
+
+### How it works
+
+The AI acts as your **studio partner**:
+- 🎧 It listens to your reference sound
+- 📖 It reads your machine's manual
+- 🎛️ It guides you to **recreate** the sound yourself
+
+No ready-made presets. No magic solution. Just **pedagogy**, step by step.
+
+### Why is it free?
+
+Because knowledge should be accessible. This project is open-source and will stay that way. If you progress thanks to it, a virtual coffee is always appreciated ☕
+
+*Made with ❤️ for beatmakers, sound designers, and everyone who refuses to stay on the surface.*""",
         "support": "☕ Donate",
         "title": "Groovebox Tutor",
         "subtitle": "Your technical partner. Decode sound. Master your gear.",
