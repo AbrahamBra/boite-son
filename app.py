@@ -406,18 +406,6 @@ if api_key:
                 st.write(f"✅ {m.name}")
     except Exception as e:
         st.error(f"Erreur listing : {e}")
-```
-
----
-
-## 🎯 **Ce qui va se passer :**
-
-Quand tu entres ta clé API, l'app va afficher une liste comme :
-```
-### 🔍 Modèles disponibles avec ta clé :
-✅ models/gemini-1.5-flash
-✅ models/gemini-1.5-pro
-✅ models/gemini-2.0-flash-exp
     
     # --- DEBUG : VOIR LES MODÈLES (Optionnel) ---
     # Décommente les 3 lignes ci-dessous pour voir la liste dans tes logs ou l'app
