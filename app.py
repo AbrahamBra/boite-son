@@ -73,141 +73,7 @@ TR = {
         "style_section": "3. Style Pédagogique",
         "memory_title": "4. 💾 Session & Mémoire",
         "memory_help": "💡 Comment ça marche ?",
-        "memory_desc": "**Sauvegarder votre progression :**\n\n1. En fin de session, cliquez sur **💾 Télécharger Session** en bas\n2. Un fichier .txt sera téléchargé avec tout l'historique\n3. La prochaine fois, glissez ce fichier dans la zone ci-dessous pour reprendre là où vous en étiez\n\nL'IA se souviendra de tout le contexte !",
-        "memory_load": "📂 Reprendre une session précédente",
-        "memory_save": "💾 Télécharger Session",
-        "reset": "🔄 Nouvelle Session",
-        "about": "📖 Philosophie du projet",
-        "about_text": "**Groovebox Tutor** est un projet libre, né du désir de reconnecter les musiciens avec leurs machines.\n\nNotre but n'est pas de copier, mais de **comprendre**. L'IA agit comme un binôme technique : elle écoute, lit la doc, et vous explique *comment* sculpter votre propre son.\n\nL'outil est gratuit. Si vous apprenez des choses grâce à lui, vous pouvez me soutenir.",
-        "support": "☕ Soutenir (Don)",
-        "title": "Groovebox Tutor",
-        "subtitle": "Votre binôme technique. Décryptez le son. Maîtrisez votre machine.",
-        "placeholder": "Posez une question technique sur ce son...",
-        "onboarding": "👋 **Objectif : Autonomie**\n\n1. Importez le **Manuel** de votre instrument (à gauche)\n2. Proposez un **Son** qui vous inspire (ci-dessous)\n3. Votre binôme analyse la texture et vous enseigne **les étapes techniques** pour recréer ce grain vous-même",
-        "legal": "⚠️ Outil d'analyse à but éducatif. L'inspiration est légale, le plagiat ne l'est pas.",
-        "sugg_1": "Analyse ce son",
-        "sugg_2": "Structure rythmique",
-        "sugg_3": "Fonction cachée",
-        "style_label": "Approche Pédagogique",
-        "tones": ["🤙 Mentor Cool", "👔 Expert Technique", "⚡ Synthétique"],
-        "formats": ["📝 Cours Complet", "✅ Checklist", "💬 Interactif"],
-        "manual_loaded": "✅ Manuel assimilé",
-        "active_track": "Piste active :",
-        "session_reloaded": "✅ Session rechargée ! L'IA se souvient du contexte."
-    },
-    "English 🇬🇧": {
-        "settings": "1. Setup",
-        "api_label": "Google API Key",
-        "api_help": "ℹ️ Why a personal key?",
-        "api_desc": "Open-source project. Using your own free key ensures your independence and total tool freedom.",
-        "doc_section": "2. Your Gear",
-        "doc_help": "🔍 Find official manual",
-        "manual_upload": "Drop PDF Manual here",
-        "audio_title": "🎧 The Sound",
-        "audio_subtitle": "Magic happens here. Drop your audio file.",
-        "audio_label": "Audio File",
-        "style_section": "3. Teaching Style",
-        "memory_title": "4. 💾 Session & Memory",
-        "memory_help": "💡 How does it work?",
-        "memory_desc": "**Save your progress:**\n\n1. At the end of your session, click **💾 Download Session** below\n2. A .txt file will be downloaded with all the history\n3. Next time, drop that file in the zone below to resume where you left off\n\nThe AI will remember all context!",
-        "memory_load": "📂 Resume previous session",
-        "memory_save": "💾 Download Session",
-        "reset": "🔄 New Session",
-        "about": "📖 Project Philosophy",
-        "about_text": "**Groovebox Tutor** is a free project.\n\nOur goal isn't to copy, but to **understand**. The AI acts like a technical partner: it listens, reads the docs, and explains *how* to craft your own sound.\n\nThe tool is free. If you learn something, you can support me.",
-        "support": "☕ Donate",
-        "title": "Groovebox Tutor",
-        "subtitle": "Your technical partner. Decode sound. Master your gear.",
-        "placeholder": "Ask a technical question about this sound...",
-        "onboarding": "👋 **Goal: Autonomy**\n\n1. Upload your instrument's **Manual** (left sidebar)\n2. Provide a **Sound** that inspires you (below)\n3. Your partner analyzes the texture and teaches you **the technical steps** to recreate it yourself",
-        "legal": "⚠️ Educational analysis tool. Inspiration is legal, plagiarism is not.",
-        "sugg_1": "Analyze sound",
-        "sugg_2": "Rhythm structure",
-        "sugg_3": "Hidden feature",
-        "style_label": "Teaching Approach",
-        "tones": ["🤙 Cool Mentor", "👔 Technical Expert", "⚡ Direct"],
-        "formats": ["📝 Full Lesson", "✅ Checklist", "💬 Interactive"],
-        "manual_loaded": "✅ Manual loaded",
-        "active_track": "Active track:",
-        "session_reloaded": "✅ Session reloaded! The AI remembers the context."
-    }
-}
-import streamlit as st
-import google.generativeai as genai
-import os
-import tempfile
-import time
-import pathlib
-import re
-from datetime import datetime
-
-# --- 1. CONFIGURATION ---
-st.set_page_config(
-    page_title="Groovebox Tutor",
-    page_icon="logo.png",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# --- 2. CSS PREMIUM ---
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
-
-    html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: #E0E0E0;
-    }
-    
-    .stApp { background-color: #0E1117; }
-    [data-testid="stSidebar"] { background-color: #0E1117; border-right: 1px solid #1F1F1F; }
-
-    h1 { font-weight: 600; letter-spacing: -1px; color: #FFFFFF; }
-    h2, h3 { font-weight: 400; color: #A0A0A0; }
-
-    /* Inputs & Buttons */
-    .stTextInput > div > div > input {
-        background-color: #161920; border: 1px solid #303030; color: white; border-radius: 8px;
-    }
-    .stButton > button {
-        background-color: #161920; color: white; border: 1px solid #303030; border-radius: 8px; font-weight: 500;
-    }
-    div[data-testid="stHorizontalBlock"] > div:first-child button {
-        background-color: #FFFFFF; color: #000000; border: none;
-    }
-    
-    /* Upload Zones */
-    div[data-testid="stFileUploader"] {
-        background-color: #12141A; border: 1px dashed #303030; border-radius: 12px; padding: 20px;
-    }
-    
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
-    .block-container {padding-top: 3rem; padding-bottom: 5rem;}
-    
-    /* Info Box */
-    div[data-testid="stAlert"] {
-        background-color: rgba(255, 255, 255, 0.05); border: 1px solid #303030; color: #E0E0E0; border-radius: 8px;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# --- 3. DICTIONNAIRE COMPLET ---
-TR = {
-    "Français 🇫🇷": {
-        "settings": "1. Configuration",
-        "api_label": "Clé API Google",
-        "api_help": "ℹ️ Pourquoi une clé perso ?",
-        "api_desc": "Projet open-source. L'usage de votre propre clé gratuite garantit votre indépendance et la gratuité totale de l'outil.",
-        "doc_section": "2. Votre Machine",
-        "doc_help": "🔍 Trouver mon manuel officiel",
-        "manual_upload": "Déposer le Manuel PDF ici",
-        "audio_title": "🎧 Le Son à Analyser",
-        "audio_subtitle": "C'est ici que la magie opère. Glissez un fichier pour lancer l'écoute.",
-        "audio_label": "Fichier Audio",
-        "style_section": "3. Style Pédagogique",
-        "memory_title": "4. 💾 Session & Mémoire",
-        "memory_help": "💡 Comment ça marche ?",
-        "memory_desc": "**Sauvegarder votre progression :**\n\n1. En fin de session, cliquez sur **💾 Télécharger Session** en bas\n2. Un fichier .txt sera téléchargé avec tout l'historique\n3. La prochaine fois, glissez ce fichier dans la zone ci-dessous pour reprendre là où vous en étiez\n\nL'IA se souviendra de tout le contexte !",
+        "memory_desc": "**Sauvegarder votre progression :**\n\n1. En fin de session, cliquez sur **💾 Télécharger** en bas\n2. Un fichier .txt sera téléchargé avec tout l'historique\n3. La prochaine fois, glissez ce fichier ici pour reprendre\n\nL'IA se souviendra de tout le contexte !",
         "memory_load": "📂 Reprendre une session précédente",
         "memory_save": "💾 Télécharger Session",
         "reset": "🔄 Nouvelle Session",
@@ -262,7 +128,7 @@ Parce que la connaissance doit être accessible. Ce projet est open-source et le
         "style_section": "3. Teaching Style",
         "memory_title": "4. 💾 Session & Memory",
         "memory_help": "💡 How does it work?",
-        "memory_desc": "**Save your progress:**\n\n1. At the end of your session, click **💾 Download Session** below\n2. A .txt file will be downloaded with all the history\n3. Next time, drop that file in the zone below to resume where you left off\n\nThe AI will remember all context!",
+        "memory_desc": "**Save your progress:**\n\n1. At the end of your session, click **💾 Download** below\n2. A .txt file will be downloaded with all the history\n3. Next time, drop that file here to resume\n\nThe AI will remember all context!",
         "memory_load": "📂 Resume previous session",
         "memory_save": "💾 Download Session",
         "reset": "🔄 New Session",
@@ -304,6 +170,266 @@ Because knowledge should be accessible. This project is open-source and will sta
         "session_reloaded": "✅ Session reloaded! The AI remembers the context."
     }
 }
+# --- 4. FONCTIONS ---
+def get_mime_type(filename):
+    if filename.endswith('.m4a'): return 'audio/mp4'
+    if filename.endswith('.wav'): return 'audio/wav'
+    return 'audio/mp3'
+
+def upload_pdf_to_gemini(path):
+    try:
+        file_ref = genai.upload_file(path=path, mime_type="application/pdf")
+        while file_ref.state.name == "PROCESSING":
+            time.sleep(1)
+            file_ref = genai.get_file(file_ref.name)
+        if file_ref.state.name == "FAILED": return None
+        return file_ref
+    except: return None
+
+def format_history(history):
+    text = f"SESSION {datetime.now().strftime('%Y-%m-%d')}\n---\n"
+    for msg in history:
+        role = "USER" if msg['role'] == "user" else "AI"
+        text += f"{role}: {msg['content']}\n\n"
+    return text
+
+# --- CONSTRUCTION DU PROMPT AVEC STYLES ---
+def build_system_prompt(lang, style_tone, style_format, memory_context, has_manual):
+    
+    # Mapping des tons
+    TONE_PROFILES = {
+        "🤙 Mentor Cool": {
+            "voice": "Ton décontracté, tutoiement, encourage l'expérimentation sans jugement",
+            "examples": "Utilise des analogies fun (ex: 'ce filtre agit comme un robinet qui laisse passer seulement les aigus')",
+            "energy": "Enthousiaste, ponctue avec des emojis musicaux 🎛️🔊"
+        },
+        "👔 Expert Technique": {
+            "voice": "Ton professionnel mais accessible, vouvoiement possible, précis dans les termes",
+            "examples": "Cite des références techniques précises, utilise le vocabulaire exact du fabricant",
+            "energy": "Rigoureux mais pédagogue, structure claire"
+        },
+        "⚡ Synthétique": {
+            "voice": "Ton synthétique, va droit au but, pas de blabla",
+            "examples": "Donne les infos essentielles, bullet points si nécessaire",
+            "energy": "Efficace, minimaliste"
+        },
+        "🤙 Cool Mentor": {
+            "voice": "Casual tone, first names, encourage experimentation without judgment",
+            "examples": "Use fun analogies (e.g., 'this filter acts like a tap letting only highs through')",
+            "energy": "Enthusiastic, use music emojis 🎛️🔊"
+        },
+        "👔 Technical Expert": {
+            "voice": "Professional yet accessible, precise terminology",
+            "examples": "Cite precise technical references, use manufacturer's exact vocabulary",
+            "energy": "Rigorous but pedagogical, clear structure"
+        },
+        "⚡ Direct": {
+            "voice": "Synthetic, straight to the point, no fluff",
+            "examples": "Give essential info, bullet points if needed",
+            "energy": "Efficient, minimalist"
+        }
+    }
+    
+    # Mapping des formats
+    FORMAT_PROFILES = {
+        "📝 Cours Complet": "Explications détaillées en prose, structure pédagogique avec intro/concept/pratique/conclusion",
+        "✅ Checklist": "Listes numérotées et bullet points, étapes concrètes à suivre, format actionnable",
+        "💬 Interactif": "Questions ouvertes fréquentes, dialogue socratique, invite l'utilisateur à réfléchir avant de donner la réponse",
+        "📝 Full Lesson": "Detailed prose explanations, pedagogical structure with intro/concept/practice/conclusion",
+        "✅ Checklist": "Numbered lists and bullets, concrete steps, actionable format",
+        "💬 Interactive": "Frequent open questions, Socratic dialogue, invite reflection before answers"
+    }
+    
+    tone_profile = TONE_PROFILES.get(style_tone, TONE_PROFILES.get("🤙 Mentor Cool", TONE_PROFILES.get("🤙 Cool Mentor")))
+    format_profile = FORMAT_PROFILES.get(style_format, FORMAT_PROFILES.get("📝 Cours Complet", FORMAT_PROFILES.get("📝 Full Lesson")))
+    
+    sys_prompt = f"""
+# IDENTITÉ
+Tu es **Groovebox Tutor**, expert en sound design et pédagogue musical.
+
+# MISSION
+Analyser l'audio fourni, {"utiliser le manuel technique de la machine" if has_manual else "expliquer les concepts généraux de synthèse"}, et enseigner à l'utilisateur comment recréer le son de manière autonome.
+
+---
+
+# 🎨 STYLE DE COMMUNICATION
+
+## Ton ({style_tone})
+{tone_profile['voice']}
+{tone_profile['examples']}
+{tone_profile['energy']}
+
+## Format de réponse ({style_format})
+{format_profile}
+
+## Langue
+{lang.split()[0]} - Adapte tout ton vocabulaire et tes exemples culturels à cette langue.
+
+{memory_context}
+
+---
+
+# 🎧 ANALYSE AUDIO (ce que tu fais en interne)
+
+Quand l'utilisateur partage un son :
+
+1. **Décomposition spectrale**
+   - Fréquences dominantes (sub/bass/mid/high)
+   - Harmoniques présents (fondamentale, octaves, partiels)
+   - Composantes de bruit (white/pink noise, texture)
+
+2. **Analyse temporelle**
+   - Envelope globale : Attack / Decay / Sustain / Release
+   - Modulations : vibrato, tremolo, filter sweep, pitch bend
+   - Rythmique interne : gates, arpeggios, patterns
+
+3. **Identification des effets**
+   - Reverb (taille, decay, wet/dry)
+   - Delay (time, feedback, ping-pong)
+   - Distortion/saturation
+   - Filtrage dynamique (LFO, envelope)
+   - Autres (chorus, phaser, flanger, etc.)
+
+4. **Hypothèse de synthèse**
+   - Type probable : soustractive / FM / wavetable / sample-based / granular
+   - Forme d'onde estimée
+   - Chaîne de traitement (oscillator → filter → envelope → FX)
+
+---
+
+# 📖 UTILISATION DU MANUEL
+
+{"✅ MANUEL FOURNI - Utilise-le comme référence absolue :" if has_manual else "⚠️ PAS DE MANUEL - Reste générique sur la synthèse :"}
+
+{"**Tu dois :**" if has_manual else "**Tu dois :**"}
+{'''
+- Citer les sections/pages précises pour chaque concept
+- Adapter ton vocabulaire aux termes exacts du fabricant
+- Identifier les features spécifiques de cette machine
+- Montrer OÙ trouver chaque paramètre dans l'interface
+- Utiliser les noms de modes/algorithmes propres à cette machine
+
+**Exemple :**
+"Pour ce filtre, consulte page 42 section FILTER TYPE — le Digitakt utilise un filtre 2-pôles avec résonance variable. Tu le trouveras en appuyant sur [FUNC] + [TRIG]."
+''' if has_manual else '''
+- Expliquer les concepts universels de synthèse
+- Donner des exemples applicables à la plupart des machines
+- Rester sur les principes théoriques sans citer de pages
+- Encourager l'utilisateur à chercher dans SON manuel si disponible
+
+**Exemple :**
+"Ce type de filtre passe-bas avec résonance est standard sur la plupart des grooveboxes. Cherche dans ton manuel les sections 'FILTER' ou 'SYNTH ENGINE'."
+'''}
+
+---
+
+# 🎓 MÉTHODOLOGIE PÉDAGOGIQUE
+
+## ❌ CE QUE TU NE FAIS JAMAIS
+- Donner les valeurs exactes des paramètres (ex: "Cutoff = 63")
+- Fournir un preset clé-en-main
+- Juste décrire sans expliquer le "pourquoi"
+- Copier-coller des passages du manuel (reformule toujours)
+
+## ✅ CE QUE TU FAIS TOUJOURS
+- Expliquer la LOGIQUE du son (relation cause-effet)
+- Guider par des questions ouvertes {" surtout en mode 💬 Interactive" if "Interactive" in style_format or "Interactif" in style_format else ""}
+- Proposer des expérimentations à faire
+- Donner des fourchettes de valeurs ("entre 40% et 70%")
+- Utiliser des analogies concrètes adaptées à la culture {lang.split()[0]}
+
+---
+
+# 📐 STRUCTURE DE RÉPONSE
+
+{"### Format PROSE (Full Lesson)" if "Full Lesson" in style_format or "Cours Complet" in style_format else ""}
+{"### Format CHECKLIST (actionnable)" if "Checklist" in style_format else ""}
+{"### Format INTERACTIF (Socratique)" if "Interactive" in style_format or "Interactif" in style_format else ""}
+
+{'''
+**Étape 1 : Observation initiale**
+Décris ce que tu entends (vocabulaire technique accessible).
+
+**Étape 2 : Question ouverte**
+Engage la réflexion de l'utilisateur.
+
+**Étape 3 : Explication conceptuelle**
+Explique les mécanismes en jeu avec références au manuel.
+
+**Étape 4 : Guide d'expérimentation**
+Donne des pistes sans donner la solution.
+
+**Étape 5 : Check-in**
+Invite au retour d'expérience.
+''' if "Full Lesson" in style_format or "Cours Complet" in style_format else ""}
+
+{'''
+**Format : Liste d'actions concrètes**
+
+✅ **ANALYSE** (ce que tu détectes)
+✅ **CONCEPTS** (théorie express)
+✅ **ACTIONS** (étapes à suivre)
+✅ **CHECK** (validation)
+''' if "Checklist" in style_format else ""}
+
+{'''
+**Format : Dialogue + Questions**
+
+🔊 **Observation**
+❓ **Question**
+💡 **Explication**
+🧪 **Expérimentation guidée**
+🔄 **Itération**
+''' if "Interactive" in style_format or "Interactif" in style_format else ""}
+
+---
+
+# 🧠 PRINCIPES PÉDAGOGIQUES
+
+1. **Autonomie > Solution rapide**
+   Goal = COMPRENDRE la synthèse, pas copier un preset.
+
+2. **Apprentissage par l'erreur**
+   Encourage les tests ratés : "Qu'as-tu appris ?"
+
+3. **Analogies culturelles**
+   Filtre = robinet, envelope = rebond de balle, résonance = corde qui vibre
+
+4. **Progressivité**
+   Layer 1 : Son de base → Layer 2 : Envelope → Layer 3 : Modulations → Layer 4 : Effets
+
+5. **Contexte matériel**
+   {"Adapte tout au gear de l'utilisateur détecté via le manuel" if has_manual else "Reste sur les principes universels applicables à toute machine"}
+
+---
+
+# ⚖️ CADRE LÉGAL & ÉTHIQUE
+
+⚠️ **IMPORTANT** : Outil **éducatif**, pas un copieur de sons.
+
+- **Inspiration légale** : Analyser les techniques ✅
+- **Plagiat illégal** : Reproduire exactement un preset commercial ❌
+
+Si le son source = preset protégé évident, rappelle :
+"Je vais t'expliquer les TECHNIQUES utilisées, pas te donner une copie conforme. L'objectif est d'apprendre, pas de plagier."
+
+---
+
+# 🔧 CONNAISSANCES TECHNIQUES
+
+Tu maîtrises :
+- **Synthèse** : soustractive, FM, wavetable, granulaire, sampling
+- **Grooveboxes** : Elektron (Digitakt/Digitone/Syntakt), MPC, SP-404, OP-1, etc.
+- **Signal** : filtres (LP/HP/BP/notch), ADSR, LFO, mod matrix
+- **Effets** : reverb, delay, distortion, chorus, phaser, compressor
+- **Sound design** : layering, texture, mouvement, espace stéréo
+
+---
+
+Prêt à analyser ton premier son ! 🎧
+"""
+    
+    return sys_prompt
 # --- 5. INTERFACE ---
 
 # --- SIDEBAR ---
@@ -399,7 +525,7 @@ with st.sidebar:
         
         with col_dl:
             st.download_button(
-                "💾 " + ("Télécharger" if lang == "Français 🇫🇷" else "Download"),
+                "💾",
                 history_txt, 
                 f"groovebox_session_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", 
                 "text/plain", 
@@ -410,9 +536,10 @@ with st.sidebar:
         
         with col_reset:
             if st.button(
-                "🔄 " + ("Nouvelle Session" if lang == "Français 🇫🇷" else "New Session"),
+                "🔄",
                 use_container_width=True,
-                type="secondary"
+                type="secondary",
+                help=T["reset"]
             ):
                 st.session_state.clear()
                 st.rerun()
@@ -459,7 +586,6 @@ if api_key:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
                 t.write(uploaded_pdf.getvalue())
                 p = t.name
-            r = upload_pdf_to_gemini(p)
             r = upload_pdf_to_gemini(p)
             if r: 
                 st.session_state.pdf_ref = r
