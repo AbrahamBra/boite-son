@@ -601,25 +601,26 @@ st.title(T["title"])
 st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;'>{T['subtitle']}</h3>", unsafe_allow_html=True)
 
 # Onboarding si pas de cle API
+# Onboarding si pas de clé API
 if not api_key:
     st.markdown(f"""
-    <div style='
+    <div style="
         background: linear-gradient(135deg, rgba(30,30,35,0.8) 0%, rgba(20,20,25,0.9) 100%);
         border-left: 3px solid #888;
         padding: 2rem;
         border-radius: 8px;
         margin: 2rem 0;
-    '>
-        <h3 style='color: #FFF; margin-top: 0; font-weight: 300; letter-spacing: 0.5px;'>
-             {'Objectif : Autonomie' if lang == 'Francais ' else 'Goal: Autonomy'}
+    ">
+        <h3 style="color: #FFF; margin-top: 0; font-weight: 300; letter-spacing: 0.5px;">
+            👋 {'Objectif : Autonomie' if lang == 'Français 🇫🇷' else 'Goal: Autonomy'}
         </h3>
-        <ol style='color: #CCC; line-height: 1.8; font-size: 1.05rem;'>
-            <li>{'Importez le <strong>Manuel</strong> de votre instrument (a gauche)' if lang == 'Francais 🇫🇷' else 'Upload your instrument\'s <strong>Manual</strong> (left sidebar)'}</li>
-            <li>{'Proposez un <strong>Son</strong> qui vous inspire (a gauche aussi)' if lang == 'Francais 🇫🇷' else 'Provide a <strong>Sound</strong> that inspires you (left sidebar)'}</li>
-            <li>{'Votre binome analyse la texture et vous enseigne les <strong>etapes techniques</strong> pour recreer ce grain vous-meme' if lang == 'Francais ' else 'Your partner analyzes the texture and teaches you <strong>the technical steps</strong>'}</li>
+        <ol style="color: #CCC; line-height: 1.8; font-size: 1.05rem;">
+            <li>{'Importez le <strong>Manuel</strong> de votre instrument (à gauche)' if lang == 'Français 🇫🇷' else 'Upload your instrument\'s <strong>Manual</strong> (left sidebar)'}</li>
+            <li>{'Proposez un <strong>Son</strong> qui vous inspire (à gauche aussi)' if lang == 'Français 🇫🇷' else 'Provide a <strong>Sound</strong> that inspires you (left sidebar)'}</li>
+            <li>{'Votre binôme analyse la texture et vous enseigne les <strong>étapes techniques</strong> pour recréer ce grain vous-même' if lang == 'Français 🇫🇷' else 'Your partner analyzes the texture and teaches you <strong>the technical steps</strong>'}</li>
         </ol>
-        <p style='color: #999; font-size: 0.9rem; margin-bottom: 0; margin-top: 1.5rem;'>
-             {'Outil d\'analyse a but educatif. L\'inspiration est legale, le plagiat ne l\'est pas.' if lang == 'Francais ' else 'Educational analysis tool. Inspiration is legal, plagiarism is not.'}
+        <p style="color: #999; font-size: 0.9rem; margin-bottom: 0; margin-top: 1.5rem;">
+            ⚠️ {'Outil d\'analyse à but éducatif. L\'inspiration est légale, le plagiat ne l\'est pas.' if lang == 'Français 🇫🇷' else 'Educational analysis tool. Inspiration is legal, plagiarism is not.'}
         </p>
     </div>
     """, unsafe_allow_html=True)
