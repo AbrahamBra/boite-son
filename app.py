@@ -44,7 +44,6 @@ def apply_theme(theme_name):
         div[data-testid="stFileUploader"] {{border: 1px dashed {t['primary']}; background-color: rgba(0,0,0,0.2); border-radius: 10px;}}
         #MainMenu {{visibility: hidden;}} footer {{visibility: hidden;}} header {{visibility: hidden;}}
         .block-container {{padding-top: 2rem; padding-bottom: 2rem;}}
-        /* Info Box Styling */
         div[data-testid="stAlert"] {{background-color: rgba(255,255,255,0.05); border: 1px solid {t['primary']}; color: white;}}
     </style>
     """
@@ -52,14 +51,14 @@ def apply_theme(theme_name):
 
 apply_theme(st.session_state.current_theme)
 
-# --- 3. DICTIONNAIRE MULTILINGUE (VERSION FINALE : ÉTHIQUE & LIBRE) ---
+# --- 3. DICTIONNAIRE MULTILINGUE (Mis à jour avec étape Clé API) ---
 TR = {
     "Français 🇫🇷": {
         "settings": "Réglages",
-        "api_label": "Clé API Google",
+        "api_label": "Clé API Google (Requis)",
         "api_help": "ℹ️ Pourquoi une clé perso ?",
         "api_desc": "Projet open-source. L'usage de votre propre clé gratuite garantit votre indépendance et la gratuité totale de l'outil.",
-        "doc_label": "📂 **Votre Manuel (La source de vérité)**",
+        "doc_label": "📂 **Documentation (Manuel)**",
         "helper_title": "🔍 Trouver mon manuel officiel",
         "helper_machine": "Votre machine :",
         "helper_dl": "1. Télécharger le PDF :",
@@ -67,7 +66,7 @@ TR = {
         "helper_drag": "2. Déposez-le ci-dessous 👇",
         "pdf_drop_label": "Fichier PDF du manuel",
         "style_label": "🧠 Approche Pédagogique",
-        "memory_label": "💾 Continuité Pédagogique",
+        "memory_label": "💾 Mémoire / Session",
         "memory_upload": "Reprendre une session (.txt)",
         "memory_download": "Sauvegarder mes notes",
         "reset": "🗑️ Nouvelle Session",
@@ -75,8 +74,8 @@ TR = {
         "about_text": "**Groovebox Tutor** est un outil libre.\n\nNotre but n'est pas de copier bêtement, mais de **comprendre**. L'IA agit comme un binôme technique : elle écoute, lit la doc, et vous explique *comment* sculpter votre son.\n\nL'outil est gratuit. Si vous apprenez grâce à lui, vous pouvez soutenir son maintien.",
         "buy_coffee": "☕ Soutenir le projet (Don)",
         "title": "Groovebox Tutor AI",
-        "caption": "Votre binôme technique. Vous n'ouvrirez plus jamais votre documentation. L'IA facilite votre apprentissage.",
-        "how_to": "👋 **Objectif : Autonomie**\n1. Importez le **Manuel**.\n2. Proposez un **Son** qui vous inspire.\n3. Votre binôme analyse la texture et vous enseigne **les étapes techniques** pour recréer ce grain vous-même.",
+        "caption": "Votre binôme technique. Décryptez le son. Maîtrisez votre machine.",
+        "how_to": "👋 **Bienvenue ! Pour commencer :**\n1. **Clé API :** Entrez votre clé Google gratuite dans le menu à gauche (Indispensable).\n2. **Manuel :** Chargez le PDF de votre machine.\n3. **Son :** Glissez un fichier audio ci-dessous pour lancer l'analyse.",
         "audio_title": "🎧 Matériau Sonore",
         "audio_desc": "Support d'analyse (MP3, WAV, M4A).",
         "drop_label": "Déposez votre fichier audio ici",
@@ -98,10 +97,10 @@ TR = {
     },
     "English 🇬🇧": {
         "settings": "Settings",
-        "api_label": "Google API Key",
+        "api_label": "Google API Key (Required)",
         "api_help": "ℹ️ Why a personal key?",
         "api_desc": "Open-source project. Using your own free key ensures your independence and keeps the tool free forever.",
-        "doc_label": "📂 **Your Manual (The Truth)**",
+        "doc_label": "📂 **Documentation (Manual)**",
         "helper_title": "🔍 Find official manual",
         "helper_machine": "Your machine:",
         "helper_dl": "1. Download PDF:",
@@ -109,7 +108,7 @@ TR = {
         "helper_drag": "2. Drop it below 👇",
         "pdf_drop_label": "Manual PDF File",
         "style_label": "🧠 Pedagogical Approach",
-        "memory_label": "💾 Learning Continuity",
+        "memory_label": "💾 Memory / Session",
         "memory_upload": "Resume session (.txt)",
         "memory_download": "Save my notes",
         "reset": "🗑️ New Session",
@@ -118,7 +117,7 @@ TR = {
         "buy_coffee": "☕ Support the project (Donate)",
         "title": "Groovebox Tutor AI",
         "caption": "Your technical partner. Decode sound. Master your gear.",
-        "how_to": "👋 **Goal: Autonomy**\n1. Upload the **Manual**.\n2. Provide a **Sound**.\n3. Your partner analyzes the texture and teaches you **the technical steps** to recreate that vibe yourself.",
+        "how_to": "👋 **Welcome! To start:**\n1. **API Key:** Enter your free Google Key in the left menu (Required).\n2. **Manual:** Upload your machine's PDF.\n3. **Sound:** Drop an audio file below to start analysis.",
         "audio_title": "🎧 Audio Material",
         "audio_desc": "Analysis source (MP3, WAV, M4A).",
         "drop_label": "Drop audio file here",
@@ -367,7 +366,6 @@ def upload_pdf_to_gemini(path):
     except: return None
 
 def format_history_for_download(history):
-    """Convertit l'historique de chat en texte lisible"""
     text = f"SESSION LOG - {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
     text += "=========================================\n\n"
     for msg in history:
@@ -376,16 +374,16 @@ def format_history_for_download(history):
         text += "-----------------------------------------\n"
     return text
 
-# --- SIDEBAR ---
+# --- SIDEBAR (RESTRUCTURÉE) ---
 with st.sidebar:
-    # 1. Langue
+    # 1. HAUT : Langue
     lang = st.selectbox("Language / Langue 🌍", list(TR.keys()), index=0)
-    T = TR.get(lang, TR["Français 🇫🇷"]) # Fallback
+    T = TR.get(lang, TR["Français 🇫🇷"]) 
     
-    # 2. Settings (Avec explication pédagogique sur la clé)
+    # 2. HAUT : Clé API (Le Passeport)
     st.title(T["settings"])
-    
     api_key = st.text_input(T["api_label"], type="password")
+    
     with st.expander(T["api_help"]):
         st.markdown(f"""
         1. [Google AI Studio](https://aistudio.google.com/) (Get API Key).
@@ -394,22 +392,34 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # 3. Philosophie & Don (NOUVEAU BLOC)
-    with st.expander(T["about_title"], expanded=False):
-        st.markdown(T["about_text"])
-        st.link_button(T["buy_coffee"], "https://www.buymeacoffee.com/", use_container_width=True)
+    # 3. MILIEU : Documentation (L'Outil)
+    st.info(T["doc_label"])
     
+    with st.expander(T["helper_title"]):
+        MANUAL_LINKS = {
+            "Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii",
+            "Roland SP-404 MKII": "https://www.roland.com/global/products/sp-404mk2/support/",
+            "TE EP-133 K.O. II": "https://teenage.engineering/downloads/ep-133",
+            "Korg Volca Sample 2": "https://www.korg.com/us/support/download/product/0/867/",
+            "Akai MPC One/Live": "https://www.akaipro.com/mpc-one",
+            "Novation Circuit Tracks": "https://downloads.novationmusic.com/novation/circuit/circuit-tracks",
+            "Arturia MicroFreak": "https://www.arturia.com/products/hardware-synths/microfreak/resources"
+        }
+        selected_machine = st.selectbox(T["helper_machine"], list(MANUAL_LINKS.keys()))
+        st.markdown(T["helper_dl"])
+        st.link_button(f"⬇️ {selected_machine} - {T['helper_site']}", MANUAL_LINKS[selected_machine], use_container_width=True)
+        st.markdown(T["helper_drag"])
+
+    uploaded_pdf = st.file_uploader(T["pdf_drop_label"], type=["pdf"], label_visibility="collapsed")
+
     st.markdown("---")
 
-    # 4. Personnalisation
+    # 4. BAS : Personnalisation & Mémoire (Le Fine-tuning)
     st.markdown(f"### {T['style_label']}")
     style_tone = st.selectbox("Tone", T["tones"], index=0, label_visibility="collapsed")
     style_format = st.radio("Format", T["formats"], index=0, label_visibility="collapsed")
 
-    # 5. Mémoire
-    st.markdown("---")
     st.markdown(f"### {T['memory_label']}")
-    
     uploaded_memory = st.file_uploader(T["memory_upload"], type=["txt"], key="mem_up", label_visibility="collapsed")
     if uploaded_memory:
         st.session_state.memory_content = uploaded_memory.getvalue().decode("utf-8")
@@ -425,31 +435,28 @@ with st.sidebar:
             use_container_width=True
         )
 
-    # 6. Documentation Helper
     st.markdown("---")
-    st.info(T["doc_label"])
-    
-    with st.expander(T["helper_title"]):
-        # (Garde ton dictionnaire MANUAL_LINKS ici, je l'abrège pour la lisibilité)
-        MANUAL_LINKS = {"Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii", "Roland SP-404 MKII": "https://www.roland.com/..."}
-        selected_machine = st.selectbox(T["helper_machine"], list(MANUAL_LINKS.keys()))
-        st.markdown(T["helper_dl"])
-        st.link_button(f"⬇️ {selected_machine} - {T['helper_site']}", MANUAL_LINKS[selected_machine], use_container_width=True)
-        st.markdown(T["helper_drag"])
 
-    uploaded_pdf = st.file_uploader(T["pdf_drop_label"], type=["pdf"], label_visibility="collapsed")
-    
-    # 7. Reset en bas
-    st.markdown("---")
+    # 5. PIED DE PAGE : Actions & Éthique
     if st.button(T["reset"], type="primary", use_container_width=True):
         st.session_state.clear()
         st.rerun()
+        
+    with st.expander(T["about_title"], expanded=False):
+        st.markdown(T["about_text"])
+        st.link_button(T["buy_coffee"], "https://www.buymeacoffee.com/", use_container_width=True)
+        
+    # Gestion Thème (Retour défaut)
+    if st.session_state.current_theme != "Default":
+        if st.button(T["back_default"], use_container_width=True):
+            st.session_state.current_theme = "Default"
+            st.rerun()
 
 # --- MAIN PAGE ---
 st.title(f"🎹 {T['title']}")
 st.caption(T["caption"])
 
-# --- EXPLICATION RAPIDE (HOW TO) ---
+# --- TUTORIEL (MIS A JOUR) ---
 st.info(T["how_to"])
 
 # --- AUDIO ZONE ---
@@ -459,9 +466,8 @@ with st.container(border=True):
     
     uploaded_audio = st.file_uploader(T["drop_label"], type=["mp3", "wav", "m4a"], label_visibility="collapsed")
     
-    # DISCLAIMER LEGAL
     if not uploaded_audio:
-        st.caption("⚠️ *Usage strictement personnel et pédagogique. Respectez le droit d'auteur.*")
+        st.caption(T["legal_warning"])
 
     if uploaded_audio:
         if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
@@ -524,28 +530,16 @@ if api_key:
         try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         except: tools = None
         
-        # --- PROMPT SYSTÈME DYNAMIQUE + MÉMOIRE ---
+        # --- PROMPT ---
         memory_context = ""
         if "memory_content" in st.session_state:
-            memory_context = f"""
-            [MÉMOIRE / CONTEXTE PRÉCÉDENT]
-            L'utilisateur a chargé un historique de session précédent. Utilise-le pour comprendre son style et ce qu'il a déjà fait :
-            {st.session_state.memory_content}
-            [FIN MÉMOIRE]
-            """
+            memory_context = f"CONTEXTE MEMOIRE:\n{st.session_state.memory_content}\n"
 
         sys_prompt = f"""
-        Tu es un expert musical. Langue de réponse : {lang}.
-        Style: {style_tone}. Format: {style_format}.
-        
+        Tu es un expert musical. Langue: {lang}. Style: {style_tone}. Format: {style_format}.
         {memory_context}
-        
-        MISSION SECONDAIRE (Genre Detection):
-        Si audio fourni, detecte genre parmi [Techno, House, Lo-Fi, Ambient].
-        Si détecté, écris à la fin : ||GENRE:Techno||.
-        
-        MISSION PRINCIPALE :
-        Analyse l'audio et aide l'utilisateur avec le manuel.
+        MISSION: Analyse l'audio, utilise le manuel, explique la synthèse.
+        DETECTE GENRE: Si Techno/House/Lo-Fi/Ambient, écris ||GENRE:Style|| à la fin.
         """
         
         model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=sys_prompt, tools=tools)
@@ -560,12 +554,11 @@ if api_key:
             req.append("⚠️ Analyse l'audio.")
 
         with st.chat_message("assistant"):
-            with st.spinner("Analyzing..."):
+            with st.spinner("Thinking..."):
                 try:
                     resp = model.generate_content(req)
                     text_resp = resp.text
                     
-                    # Detection Theme
                     match = re.search(r"\|\|GENRE:(.*?)\|\|", text_resp)
                     if match:
                         detected_genre = match.group(1).strip()
