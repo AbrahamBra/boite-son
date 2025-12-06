@@ -449,10 +449,6 @@ with st.sidebar:
 st.title(f"🎹 {T['title']}")
 st.caption(T["caption"])
 
-# --- MAIN PAGE ---
-st.title(f"🎹 {T['title']}")
-st.caption(T["caption"])
-
 # --- EXPLICATION RAPIDE (HOW TO) ---
 st.info(T["how_to"])
 
