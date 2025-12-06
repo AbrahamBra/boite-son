@@ -76,7 +76,7 @@ TR = {
         "reset": "Nouvelle Session",
         "about": "Philosophie du projet",
         # LE TEXTE RICHE EST DE RETOUR ICI :
-        "about_text": "**Groovebox Tutor** est un projet libre, né du désir de reconnecter les musiciens avec leurs machines.\n\nNotre but n'est pas de copier, mais de **comprendre**. L'IA agit comme un binôme technique : elle écoute, lit la doc, et vous explique *comment* sculpter votre propre son.\n\nL'outil est gratuit. Si vous apprenez des choses grâce à lui, vous pouvez soutenir son maintien.",
+        "about_text": "**Groovebox Tutor** est un projet libre, né du désir de reconnecter les musiciens avec leurs machines.\n\nNotre but n'est pas de copier, mais de **comprendre**. L'IA agit comme un binôme technique : elle écoute, lit la doc, et vous explique *comment* sculpter votre propre son.\n\nL'outil est gratuit. Si vous apprenez des choses grâce à lui, vous pouvez me soutenir.",
         "support": "Soutenir (Don)",
         "title": "Groovebox Tutor",
         "subtitle": "Votre binôme technique. Décryptez le son. Maîtrisez votre machine.",
