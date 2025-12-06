@@ -181,6 +181,185 @@ The AI acts as your **studio partner**:
 }
 
 # --- 4. FONCTIONS SYSTÈME ---
+def format_history_for_context(history):
+    """Transforme l'historique du chat en texte pour la mémoire de l'IA"""
+    context_str = "\n--- HISTORIQUE DE LA CONVERSATION (RÉCENT) ---\n"
+    # On prend les 10 derniers échanges pour garder le contexte frais
+    for msg in history[-10:]:
+        role = "UTILISATEUR" if msg['role'] == "user" else "ASSISTANT (TOI)"
+        context_str += f"{role}: {msg['content']}\n"
+    context_str += "--- FIN HISTORIQUE ---\n"
+    return context_str
+
+def build_system_prompt(lang, style_tone, user_level, has_manual, chat_context_str):
+    
+    # LOGIQUE DE NIVEAU RENFORCÉE
+    if "Débutant" in user_level:
+        level_instr = """
+        🚨 MODE : DÉBUTANT ABSOLU (PAS À PAS)
+        TON BUT : Faire manipuler la machine physiquement.
+        INTERDICTION : Pas de théorie, pas de compliments inutiles ("Super choix !").
+        
+        FORMAT DE RÉPONSE OBLIGATOIRE :
+        1. Donne UNE seule instruction à la fois (ex: "Appuie sur le bouton AMP").
+        2. Indique où se trouve le bouton si nécessaire.
+        3. Donne la valeur exacte (ex: "Tourne le potard D jusqu'à 64").
+        
+        Si l'utilisateur répond "C'est fait" ou "Ok", passe à l'étape suivante.
+        """
+    elif "Expert" in user_level:
+        level_instr = "MODE : EXPERT. Sois concis. Donne les tables de valeurs, les numéros de CC MIDI et les pages du manuel. Pas de blabla."
+    else:
+        level_instr = "MODE : INTERMÉDIAIRE. Explique le concept de synthèse (ex: 'On va sculpter l'enveloppe') puis guide vers les bons menus."
+
+    manual_instr = "Tu as le manuel. Cite la PAGE exacte pour chaque affirmation." if has_manual else "Base-toi sur tes connaissances générales de cette machine."
+
+    # PROMPT SYSTÈME
+    return f"""
+    Tu es "Groovebox Tutor", un coach expert en hardware musical.
+    
+    TA CIBLE MACHINE : L'utilisateur possède une machine spécifique (voir manuel ou contexte).
+    TON RÔLE : Guider l'utilisateur pour recréer le son qu'il entend (Fichier Cible) sur sa propre machine.
+    
+    {level_instr}
+    
+    {manual_instr}
+    
+    RÈGLE D'OR DE LA CONVERSATION :
+    Regarde l'HISTORIQUE ci-dessous.
+    Si l'utilisateur répond à une question que tu as posée (ex: tu as demandé "Kick ou Basse ?", il répond "Basse"),
+    NE DIS PAS "Génial j'adore la basse".
+    COMMENCE IMMÉDIATEMENT LE TUTORIEL POUR LA BASSE.
+    
+    {chat_context_str}
+    """
+
+# --- 5. LOGIQUE PRINCIPALE ---
+
+# A. SETUP
+if "chat_history" not in st.session_state: st.session_state.chat_history = []
+T = TR["Français 🇫🇷"]
+
+# B. SIDEBAR
+with st.sidebar:
+    st.header("1. Configuration")
+    api_key = st.text_input("Clé API Google", type="password")
+    if api_key: 
+        try:
+            genai.configure(api_key=api_key)
+        except: st.error("Clé invalide")
+
+    st.markdown("---")
+    st.header("🎓 Pédagogie")
+    user_level = st.radio("Ton Niveau", ["Débutant (Pas à pas)", "Intermédiaire (Guide)", "Expert (Valeurs)"])
+    style_tone = st.selectbox("Ton", ["Mentor Cool", "Strict", "Direct"])
+    
+    st.markdown("---")
+    st.header("2. Fichiers")
+    
+    # PDF
+    uploaded_pdf = st.file_uploader("Manuel (PDF)", type=["pdf"])
+    if uploaded_pdf and "pdf_ref" not in st.session_state and api_key:
+        with st.status("Lecture du manuel...", expanded=False):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
+                t.write(uploaded_pdf.getvalue()); path=t.name
+            ref = genai.upload_file(path, mime_type="application/pdf")
+            while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
+            st.session_state.pdf_ref = ref
+            st.session_state.auto_trigger = "AUTO_MANUAL"
+            st.rerun()
+    if "pdf_ref" in st.session_state: st.success("✅ Manuel chargé")
+
+    # AUDIO
+    uploaded_audio = st.file_uploader("Son à copier (Audio)", type=["mp3", "wav", "m4a"])
+    if uploaded_audio and api_key:
+        if "audio_name" not in st.session_state or st.session_state.audio_name != uploaded_audio.name:
+            with st.status("Analyse audio...", expanded=False):
+                suffix = f".{uploaded_audio.name.split('.')[-1]}"
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as t:
+                    t.write(uploaded_audio.getvalue()); path=t.name
+                ref = genai.upload_file(path)
+                while ref.state.name == "PROCESSING": time.sleep(0.5); ref = genai.get_file(ref.name)
+                st.session_state.audio_ref = ref
+                st.session_state.audio_name = uploaded_audio.name
+                st.session_state.auto_trigger = "AUTO_ANALYSE"
+                st.rerun()
+    
+    if st.button("🗑️ Reset Chat"):
+        st.session_state.chat_history = []
+        st.rerun()
+
+# C. MAIN UI
+st.title(T["title"])
+st.caption(T["subtitle"])
+
+if not api_key:
+    st.warning("⚠️ Clé API requise.")
+else:
+    # AFFICHER CHAT
+    chat_container = st.container()
+    with chat_container:
+        for m in st.session_state.chat_history:
+            with st.chat_message(m["role"]): st.markdown(m["content"])
+
+    # GESTION TRIGGERS AUTOMATIQUES
+    prompt = None
+    trigger = st.session_state.get("auto_trigger")
+
+    if trigger == "AUTO_MANUAL":
+        prompt = "👋 [SYSTÈME] J'ai chargé le manuel. Dis-moi que tu es prêt et demande quel est mon objectif."
+        st.session_state.auto_trigger = None 
+
+    elif trigger == "AUTO_ANALYSE":
+        prompt = "🔥 [SYSTÈME] Analyse ce fichier audio. Identifie les éléments (Kick, Snare, Basse, etc.) et demande-moi par lequel je veux commencer."
+        st.session_state.auto_trigger = None 
+    
+    else:
+        # INPUT UTILISATEUR STANDARD
+        user_input = st.chat_input(T["placeholder"])
+        if user_input:
+            prompt = user_input
+            # Affichage immédiat user
+            with chat_container:
+                with st.chat_message("user"): st.markdown(prompt)
+            st.session_state.chat_history.append({"role": "user", "content": prompt})
+
+    # GENERATION IA
+    if prompt:
+        with chat_container:
+            with st.chat_message("assistant"):
+                with st.spinner(T["analyzing"]):
+                    try:
+                        # 1. Récupérer l'historique sous forme de texte
+                        chat_context = format_history_for_context(st.session_state.chat_history)
+                        
+                        # 2. Construire le prompt système avec ce contexte
+                        sys_prompt = build_system_prompt(
+                            "Français", style_tone, user_level, 
+                            "pdf_ref" in st.session_state,
+                            chat_context # <--- C'EST ICI QUE LA MAGIE OPÈRE
+                        )
+
+                        # 3. Préparer la requête (Fichiers + Prompt actuel)
+                        req = []
+                        if "pdf_ref" in st.session_state: req.append(st.session_state.pdf_ref)
+                        if "audio_ref" in st.session_state: req.extend(["Voici le fichier audio cible :", st.session_state.audio_ref])
+                        
+                        req.append(prompt)
+
+                        # 4. Appel Modèle
+                        # Note : J'utilise gemini-1.5-flash ou pro car le 2.0-exp est instable pour le contexte parfois
+                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
+                        resp = model.generate_content(req)
+                        
+                        # 5. Affichage et Sauvegarde
+                        st.markdown(resp.text)
+                        st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
+                        
+                    except Exception as e:
+                        st.error(f"Erreur IA : {e}")
+
+
 def get_mime_type(filename):
     if filename.endswith('.m4a'): return 'audio/mp4'
     if filename.endswith('.wav'): return 'audio/wav'
