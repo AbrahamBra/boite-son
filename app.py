@@ -249,6 +249,11 @@ with st.container(border=True):
     
     uploaded_audio = st.file_uploader(T["drop_label"], type=["mp3", "wav", "m4a"], label_visibility="collapsed")
     
+     # --- AJOUT DU DISCLAIMER LEGAL ---
+    if not uploaded_audio:
+        st.caption("⚠️ *Usage strictement personnel et pédagogique. Respectez le droit d'auteur.*")
+    # ---------------------------------
+    
     if uploaded_audio:
         if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
             suffix = f".{uploaded_audio.name.split('.')[-1]}"
