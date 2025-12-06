@@ -471,7 +471,7 @@ if api_key:
         
         # MODÈLE : On force gemini-1.5-flash (le plus sûr pour audio + pdf)
         try:
-            model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt, tools=tools)
+            model = genai.GenerativeModel("models/gemini-1.5-flash-latest", system_instruction=sys_prompt, tools=tools)
         except Exception as e:
             st.error(f"Erreur init modèle : {e}")
             st.stop()
