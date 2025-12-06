@@ -180,84 +180,112 @@ The AI acts as your **studio partner**:
     }
 }
 
-# --- 4. FONCTIONS SYSTÈME ---
+# --- 4. FONCTIONS SYSTÈME & MÉMOIRE (OPTIMISÉES) ---
+
 def format_history_for_context(history):
     """
-    Transforme l'historique visuel du chat en texte brut pour le 'cerveau' de l'IA.
-    C'est ça qui permet à l'IA de se souvenir que tu as choisi 'Basse'.
+    Transforme TOUT l'historique en texte.
+    Gemini 1.5 a une mémoire immense, on ne limite plus aux 10 derniers messages.
     """
-    context_str = "\n--- DÉBUT DE L'HISTORIQUE DE CONVERSATION (CONTEXTE) ---\n"
-    # On prend les 10 derniers échanges pour avoir un bon contexte
-    for msg in history[-10:]:
-        role = "UTILISATEUR" if msg['role'] == "user" else "GROOVEBOX TUTOR (TOI)"
+    context_str = "\n--- 💾 MÉMOIRE DE LA SESSION (HISTORIQUE COMPLET) ---\n"
+    for msg in history:
+        role = "L'ÉLÈVE (UTILISATEUR)" if msg['role'] == "user" else "LE COACH (TOI)"
         context_str += f"{role}: {msg['content']}\n"
-    context_str += "--- FIN DE L'HISTORIQUE ---\n"
+    context_str += "--- FIN MÉMOIRE ---\n"
     return context_str
 
-def build_system_prompt(user_level, has_manual, chat_context_str):
+def build_system_prompt(lang, style_tone, user_level, has_manual, chat_context, trigger_mode=None):
     
-    # 1. LOGIQUE DE NIVEAU STRICTE
+    # 1. DÉFINITION DES PERSONAS (STYLE)
+    personas = {
+        "Mentor Cool": "Tu es un pote musicien. Tu tutoies. Tu es encourageant. Tu utilises des emojis. Ton but est que l'utilisateur s'amuse.",
+        "Expert Technique": "Tu es un ingénieur son strict. Tu vouvoies. Tu es précis, froid et chirurgical. Pas de blabla, que des faits.",
+        "Synthétique": "Tu es un robot d'assistance. Réponses ultra-courtes (max 2 phrases). Style télégraphique."
+    }
+    selected_persona = personas.get(style_tone, personas["Mentor Cool"])
+
+    # 2. CALIBRAGE DU NIVEAU (PÉDAGOGIE STRICTE)
     if "Débutant" in user_level:
         level_instr = """
-        🚨 MODE : DÉBUTANT ABSOLU (PAS À PAS).
-        Ton interlocuteur ne connait PAS le jargon.
-        RÈGLE 1 : Ne donne JAMAIS plus d'une instruction physique à la fois.
-        RÈGLE 2 : Guide le doigt de l'utilisateur ("Appuie sur le bouton AMP en haut à droite").
-        RÈGLE 3 : Si l'utilisateur confirme ("C'est fait", "Ok", "Basse"), PASSE À L'ÉTAPE SUIVANTE immédiatement sans blabla.
+        🚨 MODE : DÉBUTANT ABSOLU (NOOB TOTAL)
+        L'utilisateur est perdu. Il ne connaît PAS le vocabulaire (LFO, Filtre, Enveloppe = Interdit).
+        
+        TES RÈGLES D'OR :
+        1. Une seule action physique à la fois. (Ex: "Tourne le bouton A").
+        2. Attends que l'utilisateur dise "Ok" ou "Fait" avant de donner la suite.
+        3. Ne donne JAMAIS d'explication théorique ("On fait ça pour éclaircir le son"). On s'en fiche. On veut juste que ça marche.
+        4. Guide-le géographiquement ("Le bouton rouge en haut à gauche").
         """
     elif "Expert" in user_level:
-        level_instr = "MODE : EXPERT. Sois concis. Donne les tables de valeurs (0-127), les CC MIDI et les pages du manuel."
+        level_instr = """
+        🧠 MODE : EXPERT
+        L'utilisateur connaît sa machine. Ne l'insulte pas avec des instructions basiques.
+        Donne les valeurs MIDI (0-127), les fréquences en Hz, et les pages du manuel.
+        Sois dense et technique.
+        """
     else:
-        level_instr = "MODE : INTERMÉDIAIRE. Explique le concept sonore (enveloppe, filtre) puis dis quel menu ouvrir."
+        level_instr = """
+        🎓 MODE : INTERMÉDIAIRE
+        L'utilisateur veut comprendre.
+        Explique d'abord le concept ("On va réduire l'attaque pour avoir un son percussif").
+        Puis donne la manipulation ("Menu AMP > Attack > 0").
+        """
 
-    manual_instr = "Tu as le manuel chargé. Cite la PAGE exacte pour chaque affirmation." if has_manual else "Base-toi sur tes connaissances générales de cette machine."
-
-    # 2. PROMPT SYSTÈME FINAL
-    return f"""
-    Tu es "Groovebox Tutor", un coach expert en hardware musical.
+    manual_instr = "Tu as le manuel PDF en mémoire : cite toujours la page correspondante." if has_manual else "Base-toi sur tes connaissances de la machine."
     
-    TA MISSION : Aider l'utilisateur à refaire le son qu'il t'a envoyé (Fichier Audio) sur sa machine (Manuel).
+    # 3. ASSEMBLAGE DU PROMPT
+    base = f"""
+    Tu es Groovebox Tutor.
     
-    INSTRUCTIONS PÉDAGOGIQUES :
+    TON PERSONA : {selected_persona}
+    
+    TES INSTRUCTIONS PÉDAGOGIQUES :
     {level_instr}
     
-    INSTRUCTIONS MANUEL :
+    SOURCE DOCUMENTAIRE :
     {manual_instr}
     
-    IMPORTANT - GESTION DE LA CONVERSATION :
-    Lis attentivement l'HISTORIQUE ci-dessous.
-    Si l'utilisateur répond à une de tes questions (exemple: tu as demandé "Quel instrument ?", il répond "Kick"),
-    NE DIS PAS "Ah super choix le kick".
-    DONNE DIRECTEMENT LA PREMIÈRE ÉTAPE TECHNIQUE pour faire le kick sur sa machine.
+    CONTEXTE ACTUEL :
+    {chat_context}
     
-    {chat_context_str}
+    ⚡ INTERDICTION FORMELLE :
+    Si l'historique montre que tu as posé une question (ex: "Kick ou Snare ?") et que l'utilisateur a répondu ("Kick"),
+    NE FAIS PAS DE COMMENTAIRES INUTILES ("Ah super choix !").
+    DÉMARRE IMMÉDIATEMENT L'INSTRUCTION N°1 pour le Kick.
     """
-    elif "Expert" in user_level:
-        level_instr = "MODE : EXPERT. Sois concis. Donne les tables de valeurs, les numéros de CC MIDI et les pages du manuel. Pas de blabla."
-    else:
-        level_instr = "MODE : INTERMÉDIAIRE. Explique le concept de synthèse (ex: 'On va sculpter l'enveloppe') puis guide vers les bons menus."
-
-    manual_instr = "Tu as le manuel. Cite la PAGE exacte pour chaque affirmation." if has_manual else "Base-toi sur tes connaissances générales de cette machine."
-
-    # PROMPT SYSTÈME
-    return f"""
-    Tu es "Groovebox Tutor", un coach expert en hardware musical.
     
-    TA CIBLE MACHINE : L'utilisateur possède une machine spécifique (voir manuel ou contexte).
-    TON RÔLE : Guider l'utilisateur pour recréer le son qu'il entend (Fichier Cible) sur sa propre machine.
+    # 4. GESTION DES TRIGGERS (ACTION RÉFLEXE)
+    if trigger_mode == "AUTO_ANALYSE":
+        return base + """
+        🚨 PRIORITÉ ABSOLUE : NOUVEAU FICHIER AUDIO DÉTECTÉ.
+        Ne dis pas bonjour.
+        1. Analyse le style et les instruments du fichier audio.
+        2. Fais une liste à puces des éléments détectés (Kick, Bass, Lead...).
+        3. Demande à l'utilisateur : "Par quoi veux-tu commencer ?"
+        """
+    elif trigger_mode == "AUTO_COACH":
+        return base + """
+        🚨 PRIORITÉ ABSOLUE : COMPARAISON D'ESSAI.
+        L'utilisateur tente de copier le son.
+        1. Donne une note de ressemblance /100.
+        2. Identifie LE paramètre principal qui cloche (ex: "Ton son est trop sourd").
+        3. Dis quel bouton tourner pour corriger.
+        """
+    elif trigger_mode == "AUTO_MANUAL":
+        return base + """
+        🚨 PRIORITÉ ABSOLUE : MANUEL REÇU.
+        Confirme juste la marque et le modèle de la machine détectée dans le PDF.
+        Demande : "Veux-tu un tuto sound design ou une explication de fonction ?"
+        """
+    elif trigger_mode == "VISION":
+        return base + """
+        🚨 PRIORITÉ ABSOLUE : ANALYSE VISUELLE.
+        Regarde la photo des réglages.
+        Compare avec ce qu'il faudrait pour le son cible.
+        Si un bouton est mal placé, dis-le (ex: "Ton Cutoff est trop bas, ouvre-le vers 14h").
+        """
     
-    {level_instr}
-    
-    {manual_instr}
-    
-    RÈGLE D'OR DE LA CONVERSATION :
-    Regarde l'HISTORIQUE ci-dessous.
-    Si l'utilisateur répond à une question que tu as posée (ex: tu as demandé "Kick ou Basse ?", il répond "Basse"),
-    NE DIS PAS "Génial j'adore la basse".
-    COMMENCE IMMÉDIATEMENT LE TUTORIEL POUR LA BASSE.
-    
-    {chat_context_str}
-    """
+    return base
 
 # --- 5. LOGIQUE PRINCIPALE ---
 
