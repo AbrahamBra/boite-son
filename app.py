@@ -269,78 +269,76 @@ with st.sidebar:
         st.session_state.chat_history = []
         st.rerun()
 
-# C. MAIN UI
+# C. MAIN UI (AFFICHAGE DU CHAT EN PREMIER)
 st.title(T["title"])
 st.caption(T["subtitle"])
 
 if not api_key:
-    st.warning("⚠️ Clé API requise à gauche.")
+    st.warning("⚠️ Clé API requise.")
 else:
-    # AFFICHER CHAT
+    # 1. D'ABORD : AFFICHER L'HISTORIQUE (Pour qu'il ne disparaisse jamais)
     chat_container = st.container()
     with chat_container:
         for m in st.session_state.chat_history:
             with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    # GESTION TRIGGERS AUTOMATIQUES
-    prompt = None
-    trigger = st.session_state.get("auto_trigger")
-
-    if trigger == "AUTO_MANUAL":
-        prompt = "👋 [SYSTÈME] J'ai chargé le manuel. Dis-moi que tu es prêt et demande quel est mon objectif."
-        st.session_state.auto_trigger = None 
-
-    elif trigger == "AUTO_ANALYSE":
-        prompt = "🔥 [SYSTÈME] Analyse ce fichier audio. Identifie les éléments (Kick, Snare, Basse, etc.) et demande-moi par lequel je veux commencer."
-        st.session_state.auto_trigger = None 
-
-    elif trigger == "AUTO_COACH":
-        prompt = "⚖️ [SYSTÈME] J'ai envoyé mon essai. Corrige-moi."
-        st.session_state.auto_trigger = None
+    # 2. LOGIQUE DE TRAITEMENT (EN ARRIÈRE-PLAN)
+    # Placée ici pour que le Chat reste affiché pendant le chargement
     
-    else:
-        # INPUT UTILISATEUR STANDARD
-        user_input = st.chat_input(T["placeholder"], key="user_chat_input")
-        if user_input:
-            prompt = user_input
-            with chat_container:
-                with st.chat_message("user"): st.markdown(prompt)
-            st.session_state.chat_history.append({"role": "user", "content": prompt})
+    # A. Traitement PDF
+    if uploaded_pdf and "pdf_ref" not in st.session_state:
+        with st.sidebar.status("Lecture du manuel...", expanded=False):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
+                t.write(uploaded_pdf.getvalue()); path=t.name
+            ref = genai.upload_file(path, mime_type="application/pdf")
+            while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
+            
+            st.session_state.pdf_ref = ref
+            st.session_state.auto_trigger = "AUTO_MANUAL"
+            # Petit message visuel immédiat dans le chat
+            st.session_state.chat_history.append({"role": "user", "content": "📂 [SYSTEM] J'ai chargé le manuel."})
+            st.rerun()
 
-    # GENERATION IA
-    if prompt:
-        with chat_container:
-            with st.chat_message("assistant"):
-                with st.spinner(T["analyzing"]):
-                    try:
-                        # 1. Récupérer l'historique
-                        chat_context = format_history_for_context(st.session_state.chat_history)
-                        
-                        # 2. Construire le prompt
-                        sys_prompt = build_system_prompt(
-                            "Français", style_tone, user_level, 
-                            "pdf_ref" in st.session_state,
-                            chat_context,
-                            trigger_mode=trigger if trigger else "VISION" if "vision_ref" in st.session_state else None
-                        )
+    # B. Traitement Audio (CORRIGÉ)
+    # On utilise une logique simplifiée pour éviter le bug d'affichage
+    if uploaded_audio:
+        # On vérifie si c'est un nouveau fichier en comparant le nom
+        is_new_audio = "audio_name" not in st.session_state or st.session_state.audio_name != uploaded_audio.name
+        
+        if is_new_audio:
+            with st.sidebar.status("Analyse audio en cours...", expanded=False):
+                suffix = f".{uploaded_audio.name.split('.')[-1]}"
+                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as t:
+                    t.write(uploaded_audio.getvalue()); path=t.name
+                
+                # Upload Gemini
+                ref = genai.upload_file(path)
+                # Attente active (important pour l'audio)
+                while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
+                
+                # Mise à jour Session
+                st.session_state.audio_ref = ref
+                st.session_state.audio_name = uploaded_audio.name
+                st.session_state.auto_trigger = "AUTO_ANALYSE"
+                
+                # Feedback Chat
+                st.session_state.chat_history.append({"role": "user", "content": f"🎧 [SYSTEM] Analyse de : {uploaded_audio.name}"})
+                st.rerun()
 
-                        # 3. Requête
-                        req = []
-                        if "pdf_ref" in st.session_state: req.append(st.session_state.pdf_ref)
-                        if "audio_ref" in st.session_state: req.extend(["Voici le fichier audio cible :", st.session_state.audio_ref])
-                        if "try_ref" in st.session_state: req.extend(["Voici l'essai utilisateur :", st.session_state.try_ref])
-                        if "vision_ref" in st.session_state: req.extend(["Voici la photo des réglages :", st.session_state.vision_ref])
-                        
-                        req.append(prompt)
-
-                        # 4. Appel Modèle (VERSION 2.0 FLASH EXPERIMENTAL)
-                        # C'est la version la plus récente et rapide disponible via API
-                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
-                        resp = model.generate_content(req)
-                        
-                        # 5. Affichage
-                        st.markdown(resp.text)
-                        st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
-                        
-                    except Exception as e:
-                        st.error(f"Erreur IA : {e}")
+    # C. Traitement Essai
+    if uploaded_try:
+        is_new_try = "try_name" not in st.session_state or st.session_state.get("try_name") != uploaded_try.name
+        
+        if is_new_try:
+             with st.sidebar.status("Comparaison spectrale...", expanded=False):
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as t:
+                    t.write(uploaded_try.getvalue()); path=t.name
+                
+                ref = genai.upload_file(path)
+                while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
+                
+                st.session_state.try_ref = ref
+                st.session_state.try_name = uploaded_try.name
+                st.session_state.auto_trigger = "AUTO_COACH"
+                st.session_state.chat_history.append({"role": "user", "content": "🧪 [SYSTEM] J'ai envoyé mon essai pour correction."})
+                st.rerun()
