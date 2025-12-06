@@ -387,16 +387,46 @@ st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;
 if api_key:
     genai.configure(api_key=api_key)
     
-    if uploaded_pdf and "pdf_ref" not in st.session_state:
-        with st.status("Lecture du manuel..." if lang == "Francais " else "Reading manual...", expanded=False) as status:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
-                t.write(uploaded_pdf.getvalue())
-                p = t.name
-            r = upload_pdf_to_gemini(p)
-            if r: 
-                st.session_state.pdf_ref = r
-                status.update(label=T["manual_loaded"], state="complete")
+    # --- GESTION DU PDF (Corrigée pour permettre la mise à jour) ---
+    if uploaded_pdf:
+        # On vérifie si c'est un nouveau fichier ou si on n'a pas encore de ref
+        if "current_pdf_name" not in st.session_state or st.session_state.current_pdf_name != uploaded_pdf.name:
+            with st.status(f"Traitement du manuel : {uploaded_pdf.name}...", expanded=False) as status:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
+                    t.write(uploaded_pdf.getvalue())
+                    p = t.name
+                
+                # Upload vers Gemini
+                r = upload_pdf_to_gemini(p)
+                
+                if r: 
+                    st.session_state.pdf_ref = r
+                    st.session_state.current_pdf_name = uploaded_pdf.name # On mémorise le nom pour éviter de re-uploader
+                    status.update(label="✅ Manuel assimilé par l'IA", state="complete")
+                else:
+                    st.error("Échec de l'upload du manuel vers Google.")
 
+    # --- GESTION DE L'AUDIO (Nouvelle méthode via Upload API) ---
+    if "current_audio_path" in st.session_state:
+        # On vérifie si on a déjà uploadé cet audio spécifique vers Gemini
+        if "audio_ref" not in st.session_state or st.session_state.get("last_uploaded_audio") != st.session_state.current_audio_name:
+             with st.status("Analyse spectrale du fichier audio...", expanded=False) as status:
+                try:
+                    # Upload vers Gemini (beaucoup plus fiable que les bytes bruts)
+                    audio_file_ref = genai.upload_file(path=st.session_state.current_audio_path)
+                    
+                    # Attente que le fichier soit prêt (ACTIVE)
+                    while audio_file_ref.state.name == "PROCESSING":
+                        time.sleep(1)
+                        audio_file_ref = genai.get_file(audio_file_ref.name)
+                        
+                    st.session_state.audio_ref = audio_file_ref
+                    st.session_state.last_uploaded_audio = st.session_state.current_audio_name
+                    status.update(label="✅ Audio prêt pour analyse", state="complete")
+                except Exception as e:
+                    st.error(f"Erreur upload audio : {e}")
+
+    # --- HISTORIQUE DU CHAT ---
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     
@@ -404,34 +434,35 @@ if api_key:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
+    # --- INPUT UTILISATEUR ---
     prompt = None
+    # (Boutons de suggestion...)
     if not st.session_state.chat_history:
         col1, col2, col3 = st.columns(3)
-        if col1.button(T["sugg_1"], type="secondary", use_container_width=True):
-            prompt = T["sugg_1"]
-        elif col2.button(T["sugg_2"], type="secondary", use_container_width=True):
-            prompt = T["sugg_2"]
-        elif col3.button(T["sugg_3"], type="secondary", use_container_width=True):
-            prompt = T["sugg_3"]
+        if col1.button(T["sugg_1"], type="secondary", use_container_width=True): prompt = T["sugg_1"]
+        elif col2.button(T["sugg_2"], type="secondary", use_container_width=True): prompt = T["sugg_2"]
+        elif col3.button(T["sugg_3"], type="secondary", use_container_width=True): prompt = T["sugg_3"]
 
     user_input = st.chat_input(T["placeholder"])
     if user_input:
         prompt = user_input
 
+    # --- GÉNÉRATION DE LA RÉPONSE ---
     if prompt:
         with st.chat_message("user"):
             st.markdown(prompt)
         st.session_state.chat_history.append({"role": "user", "content": prompt})
         
-        try:
-            tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
-        except:
-            tools = None
+        # Tools (Google Search)
+        try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
+        except: tools = None
         
+        # Contexte mémoire
         memory_context = ""
         if "memory_content" in st.session_state:
-            memory_context = f"##  CONTEXTE MEMOIRE\n{st.session_state.memory_content}\n"
+            memory_context = f"## CONTEXTE MÉMOIRE (Session précédente)\n{st.session_state.memory_content}\n"
 
+        # Prompt système
         sys_prompt = build_system_prompt(
             lang=lang,
             style_tone=style_tone,
@@ -440,27 +471,38 @@ if api_key:
             has_manual="pdf_ref" in st.session_state
         )
         
-        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt, tools=tools)
+        # Choix du modèle (Si le modèle expérimental bug, replis-toi sur le 1.5 Pro)
+        try:
+            model = genai.GenerativeModel("gemini-1.5-pro", system_instruction=sys_prompt, tools=tools)
+        except:
+            model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt, tools=tools)
         
-        req = [prompt]
+        # --- CONSTRUCTION DE LA REQUÊTE (C'est ici que tout se joue) ---
+        req = []
+        
+        # 1. D'abord le Manuel (Contexte de fond)
         if "pdf_ref" in st.session_state:
             req.append(st.session_state.pdf_ref)
-        if "current_audio_path" in st.session_state:
-            audio_path = st.session_state.current_audio_path
-            mime = get_mime_type(audio_path)
-            audio_data = pathlib.Path(audio_path).read_bytes()
-            req.append({"mime_type": mime, "data": audio_data})
-            # Ne force PAS l'analyse, laisse Claude decider si c'est pertinent
+            req.append("Voici le manuel technique de la machine pour référence.")
+            
+        # 2. Ensuite l'Audio (Le sujet de l'analyse)
+        if "audio_ref" in st.session_state:
+            req.append(st.session_state.audio_ref)
+            req.append("Voici le fichier audio à analyser. Concentre-toi sur le timbre, les fréquences et les effets.")
+            
+        # 3. Enfin la question (L'instruction)
+        req.append(prompt)
 
         with st.chat_message("assistant"):
-            try:
-                resp = model.generate_content(req)
-                text_resp = resp.text
-                
-                st.markdown(text_resp)
-                st.session_state.chat_history.append({"role": "assistant", "content": text_resp})
-            except Exception as e:
-                st.error(f"Erreur IA : {e}" if lang == "Francais " else f"AI Error: {e}")
+            with st.spinner("Analyse en cours..."):
+                try:
+                    resp = model.generate_content(req)
+                    text_resp = resp.text
+                    
+                    st.markdown(text_resp)
+                    st.session_state.chat_history.append({"role": "assistant", "content": text_resp})
+                except Exception as e:
+                    st.error(f"Erreur IA : {e}")
 
 else:
     st.sidebar.warning(" Cle API requise / API Key needed")
