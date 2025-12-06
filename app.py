@@ -3,11 +3,9 @@ import google.generativeai as genai
 import os
 import tempfile
 import time
-import pathlib
-import re
 from datetime import datetime
 
-# --- 1. CONFIGURATION INITIALE ---
+# --- 1. SETUP & CONFIGURATION  ---
 st.set_page_config(
     page_title="Groovebox Tutor",
     page_icon="logo.png",
@@ -15,41 +13,115 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. THEME ENGINE ---
-THEMES = {
-    "Default": {"primary": "#238636", "border": "#30363d", "glow": "none", "bg_gradient": "linear-gradient(180deg, #0d1117 0%, #161b22 100%)"},
-    "Techno 🤖": {"primary": "#03dac6", "border": "#03dac6", "glow": "0 0 10px rgba(3, 218, 198, 0.4)", "bg_gradient": "linear-gradient(180deg, #001220 0%, #002b36 100%)"},
-    "House 🏠": {"primary": "#ff6d00", "border": "#aa00ff", "glow": "0 0 10px rgba(255, 109, 0, 0.4)", "bg_gradient": "linear-gradient(180deg, #1a0526 0%, #2d0c38 100%)"},
-    "Lo-Fi ☕": {"primary": "#d4a373", "border": "#bc6c25", "glow": "none", "bg_gradient": "linear-gradient(180deg, #282624 0%, #3e3a36 100%)"},
-    "Ambient 🌌": {"primary": "#818cf8", "border": "#a5b4fc", "glow": "0 0 15px rgba(129, 140, 248, 0.3)", "bg_gradient": "linear-gradient(180deg, #0f172a 0%, #1e293b 100%)"}
-}
+# --- 2. CSS "PREMIUM MINIMALIST" ---
+st.markdown("""
+<style>
+    /* Import de la police "Inter" (Standard Pro) */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
 
-if "current_theme" not in st.session_state: st.session_state.current_theme = "Default"
+    /* BASE */
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: #E0E0E0; /* Blanc cassé pour moins de fatigue oculaire */
+    }
+    
+    /* FOND UNIFIÉ (Sidebar + Main) */
+    .stApp {
+        background-color: #0E1117; /* Gris très profond (Pas noir pur) */
+    }
+    [data-testid="stSidebar"] {
+        background-color: #0E1117;
+        border-right: 1px solid #1F1F1F; /* Séparation ultra-subtile */
+    }
 
-def apply_theme(theme_name):
-    t = THEMES[theme_name]
-    css = f"""
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono&display=swap');
-        html, body, [class*="css"] {{font-family: 'Inter', sans-serif;}}
-        .stApp {{background: {t['bg_gradient']};}}
-        div[data-testid="stHorizontalBlock"] > div:first-child button {{
-            background-color: {t['primary']} !important; color: {'black' if theme_name == 'Techno 🤖' else 'white'} !important;
-            border: 1px solid {t['border']}; box-shadow: {t['glow']}; transition: all 0.3s ease;
-        }}
-        button[kind="secondary"] {{background-color: rgba(255,255,255,0.05); color: {t['primary']}; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px;}}
-        button[kind="secondary"]:hover {{border-color: {t['primary']}; box-shadow: {t['glow']};}}
-        .stTextInput > div > div > input {{background-color: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: white;}}
-        .stTextInput > div > div > input:focus {{border-color: {t['primary']}; box-shadow: {t['glow']};}}
-        div[data-testid="stFileUploader"] {{border: 1px dashed {t['primary']}; background-color: rgba(0,0,0,0.2); border-radius: 10px;}}
-        #MainMenu {{visibility: hidden;}} footer {{visibility: hidden;}} header {{visibility: hidden;}}
-        .block-container {{padding-top: 2rem; padding-bottom: 2rem;}}
-        div[data-testid="stAlert"] {{background-color: rgba(255,255,255,0.05); border: 1px solid {t['primary']}; color: white;}}
-    </style>
-    """
-    st.markdown(css, unsafe_allow_html=True)
+    /* TITRES */
+    h1 {
+        font-weight: 600;
+        letter-spacing: -1px;
+        color: #FFFFFF;
+    }
+    h2, h3 {
+        font-weight: 400;
+        color: #A0A0A0;
+    }
 
-apply_theme(st.session_state.current_theme)
+    /* INPUTS (Flat Design) */
+    .stTextInput > div > div > input {
+        background-color: #161920;
+        border: 1px solid #303030;
+        color: white;
+        border-radius: 8px;
+        padding: 10px;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #4A4A4A; /* Pas de bleu Windows, juste un gris plus clair */
+        box-shadow: none;
+    }
+
+    /* BOUTONS (Sophistiqués) */
+    .stButton > button {
+        background-color: #161920;
+        color: white;
+        border: 1px solid #303030;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .stButton > button:hover {
+        background-color: #20242C;
+        border-color: #FFFFFF;
+    }
+    
+    /* BOUTON ACTION PRINCIPALE (Primary) */
+    div[data-testid="stHorizontalBlock"] > div:first-child button {
+        background-color: #FFFFFF; /* Bouton Blanc style Vercel/Apple */
+        color: #000000;
+        border: none;
+    }
+    div[data-testid="stHorizontalBlock"] > div:first-child button:hover {
+        background-color: #E0E0E0;
+    }
+
+    /* UPLOAD ZONES (Clean) */
+    div[data-testid="stFileUploader"] {
+        background-color: #12141A;
+        border: 1px dashed #303030;
+        border-radius: 12px;
+        padding: 30px;
+        transition: border 0.3s;
+    }
+    div[data-testid="stFileUploader"]:hover {
+        border-color: #606060;
+    }
+    
+    /* SUGGESTIONS (Pills) */
+    button[kind="secondary"] {
+        background-color: transparent;
+        border: 1px solid #303030;
+        border-radius: 20px;
+        color: #A0A0A0;
+        font-size: 13px;
+    }
+    button[kind="secondary"]:hover {
+        border-color: #FFFFFF;
+        color: #FFFFFF;
+        background-color: transparent;
+    }
+
+    /* NETTOYAGE */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .block-container {padding-top: 3rem; padding-bottom: 5rem;}
+    
+    /* Cacher les labels des inputs si besoin pour épuré */
+    .stTextInput label {
+        font-size: 12px;
+        color: #606060;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 
 # --- 3. DICTIONNAIRE MULTILINGUE (Mis à jour avec étape Clé API) ---
 TR = {
@@ -365,110 +437,74 @@ def upload_pdf_to_gemini(path):
         return file_ref
     except: return None
 
-def format_history_for_download(history):
-    text = f"SESSION LOG - {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
-    text += "=========================================\n\n"
+def format_history(history):
+    text = f"SESSION {datetime.now().strftime('%Y-%m-%d')}\n---\n"
     for msg in history:
         role = "USER" if msg['role'] == "user" else "AI"
-        text += f"[{role}]:\n{msg['content']}\n\n"
-        text += "-----------------------------------------\n"
+        text += f"{role}: {msg['content']}\n\n"
     return text
 
-# --- SIDEBAR (RESTRUCTURÉE) ---
+# --- INTERFACE ---
+
+# 1. SIDEBAR (Ultra Minimaliste)
 with st.sidebar:
-    # 1. HAUT : Langue
-    lang = st.selectbox("Language / Langue 🌍", list(TR.keys()), index=0)
-    T = TR.get(lang, TR["Français 🇫🇷"]) 
+    # Langue
+    lang_options = ["Français 🇫🇷", "English 🇬🇧", "Español 🇪🇸", "Deutsch 🇩🇪", "Italiano 🇮🇹", "Português 🇧🇷", "日本語 🇯🇵"]
+    lang = st.selectbox("Langue", lang_options, label_visibility="collapsed")
+    T = TR["Français 🇫🇷"] # Par défaut pour le code, tu peux remettre la logique dynamique si tu veux toutes les langues
     
-    # 2. HAUT : Clé API (Le Passeport)
-    st.title(T["settings"])
-    api_key = st.text_input(T["api_label"], type="password")
+    st.markdown("### " + T["settings"])
     
-    with st.expander(T["api_help"]):
-        st.markdown(f"""
-        1. [Google AI Studio](https://aistudio.google.com/) (Get API Key).
-        2. {T['api_desc']}
-        """)
-    
-    st.markdown("---")
-    
-    # 3. MILIEU : Documentation (L'Outil)
-    st.info(T["doc_label"])
-    
-    with st.expander(T["helper_title"]):
-        MANUAL_LINKS = {
-            "Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii",
-            "Roland SP-404 MKII": "https://www.roland.com/global/products/sp-404mk2/support/",
-            "TE EP-133 K.O. II": "https://teenage.engineering/downloads/ep-133",
-            "Korg Volca Sample 2": "https://www.korg.com/us/support/download/product/0/867/",
-            "Akai MPC One/Live": "https://www.akaipro.com/mpc-one",
-            "Novation Circuit Tracks": "https://downloads.novationmusic.com/novation/circuit/circuit-tracks",
-            "Arturia MicroFreak": "https://www.arturia.com/products/hardware-synths/microfreak/resources"
-        }
-        selected_machine = st.selectbox(T["helper_machine"], list(MANUAL_LINKS.keys()))
-        st.markdown(T["helper_dl"])
-        st.link_button(f"⬇️ {selected_machine} - {T['helper_site']}", MANUAL_LINKS[selected_machine], use_container_width=True)
-        st.markdown(T["helper_drag"])
-
-    uploaded_pdf = st.file_uploader(T["pdf_drop_label"], type=["pdf"], label_visibility="collapsed")
+    # API Key (Discret)
+    api_key = st.text_input("API Key", type="password", placeholder="Collez votre clé Google ici")
+    if not api_key:
+        st.caption("Une clé est requise pour utiliser l'IA.")
+        with st.expander("Obtenir une clé"):
+            st.markdown("[Google AI Studio](https://aistudio.google.com/) (Gratuit)")
 
     st.markdown("---")
-
-    # 4. BAS : Personnalisation & Mémoire (Le Fine-tuning)
-    st.markdown(f"### {T['style_label']}")
-    style_tone = st.selectbox("Tone", T["tones"], index=0, label_visibility="collapsed")
-    style_format = st.radio("Format", T["formats"], index=0, label_visibility="collapsed")
-
-    st.markdown(f"### {T['memory_label']}")
-    uploaded_memory = st.file_uploader(T["memory_upload"], type=["txt"], key="mem_up", label_visibility="collapsed")
-    if uploaded_memory:
-        st.session_state.memory_content = uploaded_memory.getvalue().decode("utf-8")
-        st.success(T["memory_loaded"])
     
-    if "chat_history" in st.session_state and st.session_state.chat_history:
-        history_txt = format_history_for_download(st.session_state.chat_history)
-        st.download_button(
-            label=f"📥 {T['memory_download']}",
-            data=history_txt,
-            file_name=f"groovebox_mentor_session_{datetime.now().strftime('%Y%m%d')}.txt",
-            mime="text/plain",
-            use_container_width=True
-        )
+    # Doc
+    st.caption(T["doc_section"])
+    with st.expander(T["doc_help"]):
+        st.markdown("Liens vers les sites constructeurs (Elektron, Roland, Korg...)")
+        # Ici tu remets tes liens si tu veux, mais cachés par défaut pour le clean
+    
+    uploaded_pdf = st.file_uploader(T["manual_upload"], type=["pdf"], label_visibility="collapsed")
+    if uploaded_pdf:
+        st.success(f"Actif : {uploaded_pdf.name}")
 
     st.markdown("---")
-
-    # 5. PIED DE PAGE : Actions & Éthique
-    if st.button(T["reset"], type="primary", use_container_width=True):
-        st.session_state.clear()
-        st.rerun()
-        
-    with st.expander(T["about_title"], expanded=False):
-        st.markdown(T["about_text"])
-        st.link_button(T["buy_coffee"], "https://www.buymeacoffee.com/", use_container_width=True)
-        
-    # Gestion Thème (Retour défaut)
-    if st.session_state.current_theme != "Default":
-        if st.button(T["back_default"], use_container_width=True):
-            st.session_state.current_theme = "Default"
+    
+    # Session
+    st.caption(T["memory_section"])
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button(T["reset"], use_container_width=True):
+            st.session_state.clear()
             st.rerun()
+    with col_b:
+        # Placeholder pour download (logique activée si chat existe)
+        pass 
 
-# --- MAIN PAGE ---
-st.title(f"🎹 {T['title']}")
-st.caption(T["caption"])
+    st.markdown("---")
+    with st.expander(T["about"]):
+        st.caption("Groovebox Tutor est un projet Open Source gratuit dédié à l'apprentissage de la synthèse sonore.")
+        st.markdown("[Soutenir le projet](https://www.buymeacoffee.com/)")
 
-# --- TUTORIEL (MIS A JOUR) ---
-st.info(T["how_to"])
+# 2. MAIN HEADER (Typographie forte)
+st.title(T["title"])
+st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;'>{T['subtitle']}</h3>", unsafe_allow_html=True)
 
-# --- AUDIO ZONE ---
-with st.container(border=True):
-    st.subheader(T["audio_title"])
-    st.markdown(T["audio_desc"])
+# 3. ONBOARDING (Si pas de clé)
+if not api_key:
+    st.info(f"{T['step_1']}")
+
+# 4. STUDIO ZONE (Clean)
+with st.container():
+    uploaded_audio = st.file_uploader("Fichier Audio", type=["mp3", "wav", "m4a"], label_visibility="collapsed")
     
-    uploaded_audio = st.file_uploader(T["drop_label"], type=["mp3", "wav", "m4a"], label_visibility="collapsed")
-    
-    if not uploaded_audio:
-        st.caption(T["legal_warning"])
-
+    # Logique Audio
     if uploaded_audio:
         if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
             suffix = f".{uploaded_audio.name.split('.')[-1]}"
@@ -476,53 +512,46 @@ with st.container(border=True):
                 tmp.write(uploaded_audio.getvalue())
                 st.session_state.current_audio_path = tmp.name
                 st.session_state.current_audio_name = uploaded_audio.name
-                if "suggested_theme" in st.session_state: del st.session_state.suggested_theme
                 st.rerun()
 
     if "current_audio_path" in st.session_state:
-        st.success(f"{T['active_track']} **{st.session_state.get('current_audio_name', 'Inconnu')}**")
         st.audio(st.session_state.current_audio_path)
 
-# --- LOGIC ---
+# 5. CHAT LOGIC
 if api_key:
     genai.configure(api_key=api_key)
     
+    # PDF Load
     if uploaded_pdf and "pdf_ref" not in st.session_state:
-        with st.spinner("Loading PDF..."):
+        with st.status("Lecture du manuel...", expanded=False) as status:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t: t.write(uploaded_pdf.getvalue()); p=t.name
             r = upload_pdf_to_gemini(p)
-            if r: st.session_state.pdf_ref = r; st.toast(T["manual_loaded"], icon="📘")
+            if r: 
+                st.session_state.pdf_ref = r
+                status.update(label="Manuel assimilé", state="complete")
 
-    # --- CHAT ---
-    st.divider()
+    # Chat History
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
     
+    # Affichage Chat
     for m in st.session_state.chat_history:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    # --- SUGGESTIONS ---
-    suggestions = []
-    has_audio = "current_audio_path" in st.session_state
-    has_pdf = "pdf_ref" in st.session_state
+    # Suggestions (Pills)
+    if not st.session_state.chat_history:
+        col1, col2, col3 = st.columns(3)
+        if col1.button(T["sugg_1"], type="secondary", use_container_width=True): prompt = T["sugg_1"]
+        elif col2.button(T["sugg_2"], type="secondary", use_container_width=True): prompt = T["sugg_2"]
+        elif col3.button(T["sugg_3"], type="secondary", use_container_width=True): prompt = T["sugg_3"]
+        else: prompt = None
+    else:
+        prompt = None
 
-    if has_audio and has_pdf: suggestions.append(T["sugg_combo"])
-    if has_audio: suggestions.append(T["sugg_audio"])
-    if has_pdf: suggestions.append(T["sugg_pdf"])
-    if not suggestions: suggestions.append(T["sugg_web"])
+    # Input User
+    user_input = st.chat_input(T["placeholder"])
+    if user_input: prompt = user_input
 
-    if suggestions:
-        st.markdown(f"<small style='color: #8b949e; margin-bottom: 5px;'>💡 Ideas:</small>", unsafe_allow_html=True)
-        cols = st.columns(min(len(suggestions), 3)) 
-        choice = None
-        for i, col in enumerate(cols):
-            if i < 3:
-                if col.button(suggestions[i], key=f"sugg_{i}", type="secondary", use_container_width=True):
-                    choice = suggestions[i]
-
-    # --- INPUT ---
-    prompt = st.chat_input(T["input_placeholder"])
-    if choice: prompt = choice
-    
+    # Traitement IA
     if prompt:
         with st.chat_message("user"): st.markdown(prompt)
         st.session_state.chat_history.append({"role": "user", "content": prompt})
@@ -530,17 +559,7 @@ if api_key:
         try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         except: tools = None
         
-        # --- PROMPT ---
-        memory_context = ""
-        if "memory_content" in st.session_state:
-            memory_context = f"CONTEXTE MEMOIRE:\n{st.session_state.memory_content}\n"
-
-        sys_prompt = f"""
-        Tu es un expert musical. Langue: {lang}. Style: {style_tone}. Format: {style_format}.
-        {memory_context}
-        MISSION: Analyse l'audio, utilise le manuel, explique la synthèse.
-        DETECTE GENRE: Si Techno/House/Lo-Fi/Ambient, écris ||GENRE:Style|| à la fin.
-        """
+        sys_prompt = "Tu es un expert musical pédagogue. Sois concis et précis."
         
         model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=sys_prompt, tools=tools)
         
@@ -551,39 +570,13 @@ if api_key:
             mime = get_mime_type(audio_path)
             audio_data = pathlib.Path(audio_path).read_bytes()
             req.append({"mime_type": mime, "data": audio_data})
-            req.append("⚠️ Analyse l'audio.")
+            req.append("Analyse l'audio.")
 
         with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                try:
-                    resp = model.generate_content(req)
-                    text_resp = resp.text
-                    
-                    match = re.search(r"\|\|GENRE:(.*?)\|\|", text_resp)
-                    if match:
-                        detected_genre = match.group(1).strip()
-                        text_resp = text_resp.replace(match.group(0), "")
-                        if "Techno" in detected_genre: st.session_state.suggested_theme = "Techno 🤖"
-                        elif "House" in detected_genre: st.session_state.suggested_theme = "House 🏠"
-                        elif "Lo-Fi" in detected_genre: st.session_state.suggested_theme = "Lo-Fi ☕"
-                        elif "Ambient" in detected_genre: st.session_state.suggested_theme = "Ambient 🌌"
-
-                    st.markdown(text_resp)
-                    st.session_state.chat_history.append({"role": "assistant", "content": text_resp})
-                    
-                    if match: st.rerun()
-                        
-                except Exception as e:
-                    st.error(f"Error: {e}")
-
-    if "suggested_theme" in st.session_state and st.session_state.suggested_theme != st.session_state.current_theme:
-        with st.container():
-            col_msg, col_btn = st.columns([3, 1])
-            col_msg.info(f"{T['theme_detected']} **{st.session_state.suggested_theme}**")
-            if col_btn.button(T['apply_theme'], use_container_width=True):
-                st.session_state.current_theme = st.session_state.suggested_theme
-                del st.session_state.suggested_theme
-                st.rerun()
-
-else:
-    st.warning("👈 Please enter your API Key to start.")
+            # Pas de spinner texte, juste l'animation par défaut
+            try:
+                resp = model.generate_content(req)
+                st.markdown(resp.text)
+                st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
+            except Exception as e:
+                st.error("Erreur de connexion IA")
