@@ -391,22 +391,33 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # FOOTER : ACTIONS
+    # FOOTER : ACTIONS (seulement si une conversation existe)
     if "chat_history" in st.session_state and st.session_state.chat_history:
         history_txt = format_history(st.session_state.chat_history)
-        st.download_button(
-            T["memory_save"], 
-            history_txt, 
-            f"groovebox_session_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", 
-            "text/plain", 
-            use_container_width=True,
-            type="primary"
-        )
-
-    if st.button(T["reset"], use_container_width=True):
-        st.session_state.clear()
-        st.rerun()
-
+        
+        col_dl, col_reset = st.columns(2)
+        
+        with col_dl:
+            st.download_button(
+                "💾 " + ("Télécharger" if lang == "Français 🇫🇷" else "Download"),
+                history_txt, 
+                f"groovebox_session_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", 
+                "text/plain", 
+                use_container_width=True,
+                type="primary",
+                help=T["memory_save"]
+            )
+        
+        with col_reset:
+            if st.button(
+                "🔄 " + ("Nouvelle Session" if lang == "Français 🇫🇷" else "New Session"),
+                use_container_width=True,
+                type="secondary"
+            ):
+                st.session_state.clear()
+                st.rerun()
+    
+    # Footer philosophie (toujours visible)
     with st.expander(T["about"]):
         st.markdown(T["about_text"])
         st.markdown(f"[{T['support']}](https://www.buymeacoffee.com/)")
@@ -417,7 +428,27 @@ st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;
 
 # Onboarding si pas de clé API
 if not api_key:
-    st.info(T["onboarding"])
+    st.markdown(f"""
+    <div style='
+        background: linear-gradient(135deg, rgba(30,30,35,0.8) 0%, rgba(20,20,25,0.9) 100%);
+        border-left: 3px solid #888;
+        padding: 2rem;
+        border-radius: 8px;
+        margin: 2rem 0;
+    '>
+        <h3 style='color: #FFF; margin-top: 0; font-weight: 300; letter-spacing: 0.5px;'>
+            👋 {'Objectif : Autonomie' if lang == 'Français 🇫🇷' else 'Goal: Autonomy'}
+        </h3>
+        <ol style='color: #CCC; line-height: 1.8; font-size: 1.05rem;'>
+            <li>{'Importez le <strong>Manuel</strong> de votre instrument (à gauche)' if lang == 'Français 🇫🇷' else 'Upload your instrument\'s <strong>Manual</strong> (left sidebar)'}</li>
+            <li>{'Proposez un <strong>Son</strong> qui vous inspire (à gauche aussi)' if lang == 'Français 🇫🇷' else 'Provide a <strong>Sound</strong> that inspires you (left sidebar)'}</li>
+            <li>{'Votre binôme analyse la texture et vous enseigne les <strong>étapes techniques</strong> pour recréer ce grain vous-même' if lang == 'Français 🇫🇷' else 'Your partner analyzes the texture and teaches you <strong>the technical steps</strong>'}</li>
+        </ol>
+        <p style='color: #999; font-size: 0.9rem; margin-bottom: 0; margin-top: 1.5rem;'>
+            ⚠️ {'Outil d\'analyse à but éducatif. L\'inspiration est légale, le plagiat ne l\'est pas.' if lang == 'Français 🇫🇷' else 'Educational analysis tool. Inspiration is legal, plagiarism is not.'}
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 # ========== TON CODE "LOGIC" VA ICI ==========
 # (Celui que tu m'as montré, copie-le tel quel en dessous)
