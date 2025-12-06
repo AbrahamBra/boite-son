@@ -450,9 +450,7 @@ if not api_key:
     </div>
     """, unsafe_allow_html=True)
 
-# ========== TON CODE "LOGIC" VA ICI ==========
-# (Celui que tu m'as montré, copie-le tel quel en dessous)
-
+# --- LOGIC ---
 if api_key:
     genai.configure(api_key=api_key)
     
@@ -461,15 +459,7 @@ if api_key:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
                 t.write(uploaded_pdf.getvalue())
                 p = t.name
-            # --- LOGIC ---
-if api_key:
-    genai.configure(api_key=api_key)
-    
-    if uploaded_pdf and "pdf_ref" not in st.session_state:
-        with st.status("Lecture du manuel..." if lang == "Français 🇫🇷" else "Reading manual...", expanded=False) as status:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
-                t.write(uploaded_pdf.getvalue())
-                p = t.name
+            r = upload_pdf_to_gemini(p)
             r = upload_pdf_to_gemini(p)
             if r: 
                 st.session_state.pdf_ref = r
