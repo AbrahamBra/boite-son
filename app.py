@@ -365,7 +365,8 @@ else:
                         req.append(prompt)
 
                         # 4. Appel Modèle (Stable)
-                        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt)
+                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
+
                         resp = model.generate_content(req)
                         
                         # 5. Affichage
