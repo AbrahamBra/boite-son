@@ -385,19 +385,14 @@ st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;
 
 # --- LOGIC ---
 if api_key:
-        genai.configure(api_key=api_key)
-        
-        # BOUTON DE DEBUG
-        if st.button("🕵️ Voir mes modèles disponibles"):
-            st.write("### Modèles accessibles :")
-            try:
-                for m in genai.list_models():
-                    # On affiche seulement ceux qui savent générer du contenu (texte/chat)
-                    if 'generateContent' in m.supported_generation_methods:
-                        st.code(m.name)
-            except Exception as e:
-                st.error(f"Erreur : {e}")
+    genai.configure(api_key=api_key)
     
+    # --- DEBUG : VOIR LES MODÈLES (Optionnel) ---
+    # Décommente les 3 lignes ci-dessous pour voir la liste dans tes logs ou l'app
+    # try:
+    #     st.write([m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods])
+    # except: pass
+
     # 1. GESTION DU PDF (Upload propre)
     if uploaded_pdf:
         # On vérifie si c'est un nouveau fichier
@@ -413,13 +408,12 @@ if api_key:
                     st.session_state.current_pdf_name = uploaded_pdf.name
                     status.update(label="✅ Manuel assimilé", state="complete")
 
-    # 2. GESTION DE L'AUDIO (C'est ici que ça bloquait avant)
-    # On doit uploader le fichier vers l'API, pas juste envoyer les bytes
+    # 2. GESTION DE L'AUDIO (Correction critique ici)
     if "current_audio_path" in st.session_state:
         if "audio_ref" not in st.session_state or st.session_state.get("last_uploaded_audio") != st.session_state.current_audio_name:
              with st.status("Analyse du spectre audio...", expanded=False) as status:
                 try:
-                    # Upload vers Gemini
+                    # Upload vers Gemini (l'IA a besoin du fichier sur ses serveurs)
                     audio_file_ref = genai.upload_file(path=st.session_state.current_audio_path)
                     
                     # Attente que le fichier soit prêt (état ACTIVE)
@@ -453,21 +447,19 @@ if api_key:
     if user_input:
         prompt = user_input
 
-    # 5. GÉNÉRATION (Version Stable)
+    # 5. GÉNÉRATION
     if prompt:
         with st.chat_message("user"):
             st.markdown(prompt)
         st.session_state.chat_history.append({"role": "user", "content": prompt})
         
-        # Tools (Google Search désactivé si erreur, sinon garder la ligne)
+        # Tools (Google Search désactivé pour éviter les erreurs, réactive si besoin)
         tools = None 
-        # Si tu veux la recherche web, décommente la ligne suivante :
-        # tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         
         # Contexte Mémoire
         memory_context = ""
         if "memory_content" in st.session_state:
-            memory_context = f"## CONTEXTE MÉMOIRE\n{st.session_state.memory_content}\n"
+            memory_context = f"## CONTEXTE MEMOIRE\n{st.session_state.memory_content}\n"
 
         sys_prompt = build_system_prompt(
             lang=lang,
@@ -477,11 +469,14 @@ if api_key:
             has_manual="pdf_ref" in st.session_state
         )
         
-        # MODÈLE : On utilise uniquement FLASH (Le plus robuste)
-        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt, tools=tools)
+        # MODÈLE : On force gemini-1.5-flash (le plus sûr pour audio + pdf)
+        try:
+            model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt, tools=tools)
+        except Exception as e:
+            st.error(f"Erreur init modèle : {e}")
+            st.stop()
         
         # CONSTRUCTION DE LA REQUÊTE
-        # L'ordre est important : D'abord les fichiers (Contexte), ensuite la question
         req = []
         
         if "pdf_ref" in st.session_state:
@@ -490,7 +485,7 @@ if api_key:
             
         if "audio_ref" in st.session_state:
             req.append(st.session_state.audio_ref)
-            req.append("Fichier audio à analyser (écoute attentivement).")
+            req.append("Fichier audio à analyser.")
             
         req.append(prompt)
 
@@ -502,7 +497,7 @@ if api_key:
                     st.markdown(text_resp)
                     st.session_state.chat_history.append({"role": "assistant", "content": text_resp})
                 except Exception as e:
-                    st.error(f"Erreur : {e}")
+                    st.error(f"Erreur IA : {e}")
 
 else:
     st.sidebar.warning("⚠️ Clé API requise / API Key needed")
