@@ -10,7 +10,7 @@ from datetime import datetime
 # --- 1. CONFIGURATION INITIALE ---
 st.set_page_config(
     page_title="Groovebox Tutor",
-    page_icon="logo.png",
+    page_icon="logo.png", # Juste le Favicon (onglet navigateur)
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -44,14 +44,13 @@ def apply_theme(theme_name):
         div[data-testid="stFileUploader"] {{border: 1px dashed {t['primary']}; background-color: rgba(0,0,0,0.2); border-radius: 10px;}}
         #MainMenu {{visibility: hidden;}} footer {{visibility: hidden;}} header {{visibility: hidden;}}
         .block-container {{padding-top: 2rem; padding-bottom: 2rem;}}
-        [data-testid="stSidebar"] img {{border-radius: 20px !important; box-shadow: 0 0 20px rgba(0,0,0,0.5); margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto;}}
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
 
 apply_theme(st.session_state.current_theme)
 
-# --- 3. DICTIONNAIRE MULTILINGUE (Mise à jour avec Memory) ---
+# --- 3. DICTIONNAIRE MULTILINGUE COMPLET (7 LANGUES) ---
 TR = {
     "Français 🇫🇷": {
         "settings": "Réglages",
@@ -59,7 +58,7 @@ TR = {
         "doc_label": "📂 **Documentation (Manuel)**",
         "style_label": "🧠 Style du Prof",
         "memory_label": "💾 Mémoire / Session",
-        "memory_upload": "Recharger une session précédente",
+        "memory_upload": "Recharger une session",
         "memory_download": "Télécharger l'historique",
         "reset": "🗑️ Reset",
         "support": "❤️ Soutenir",
@@ -112,6 +111,156 @@ TR = {
         "theme_detected": "🎨 Vibe detected:",
         "apply_theme": "Apply Theme",
         "back_default": "🔙 Back to Default"
+    },
+    "Español 🇪🇸": {
+        "settings": "Configuración",
+        "api_help": "ℹ️ ¿Cómo obtener clave gratis?",
+        "doc_label": "📂 **Documentación (Manual)**",
+        "style_label": "🧠 Estilo del Profesor",
+        "memory_label": "💾 Memoria / Sesión",
+        "memory_upload": "Cargar sesión anterior",
+        "memory_download": "Descargar historial",
+        "reset": "🗑️ Reiniciar",
+        "support": "❤️ Apoyar",
+        "buy_coffee": "☕ Invítame un café",
+        "title": "Groovebox Tutor AI",
+        "caption": "Decodifica el sonido. Domina tu máquina. Crea tu propio tono.",
+        "audio_title": "🎧 Fuente de Audio",
+        "audio_desc": "Sube un archivo de audio (MP3, WAV, M4A) para analizar.",
+        "drop_label": "Arrastra tu archivo aquí",
+        "active_track": "🎵 Pista activa:",
+        "manual_loaded": "¡Manual cargado!",
+        "memory_loaded": "¡Memoria cargada!",
+        "input_placeholder": "Escribe tu pregunta aquí...",
+        "tones": ["🤙 Genial y Pedagógico", "👔 Experto Técnico", "⚡ Breve y Directo"],
+        "formats": ["📝 Tutorial Completo", "✅ Lista de verificación", "💬 Interactivo (Paso a paso)"],
+        "sugg_combo": "🔥 Decodifica este sonido y dame la receta",
+        "sugg_audio": "🥁 Analiza el ritmo",
+        "sugg_pdf": "🎛️ Explícame una función oculta",
+        "sugg_web": "🔍 Encuentra un truco de diseño sonoro",
+        "theme_detected": "🎨 Ambiente detectado:",
+        "apply_theme": "Aplicar tema",
+        "back_default": "🔙 Volver al defecto"
+    },
+    "Deutsch 🇩🇪": {
+        "settings": "Einstellungen",
+        "api_help": "ℹ️ Kostenlosen Key erhalten?",
+        "doc_label": "📂 **Dokumentation (Handbuch)**",
+        "style_label": "🧠 Lehrer-Stil",
+        "memory_label": "💾 Speicher / Sitzung",
+        "memory_upload": "Sitzung laden",
+        "memory_download": "Verlauf herunterladen",
+        "reset": "🗑️ Zurücksetzen",
+        "support": "❤️ Unterstützen",
+        "buy_coffee": "☕ Spendier mir einen Kaffee",
+        "title": "Groovebox Tutor AI",
+        "caption": "Entschlüssle den Sound. Beherrsche deine Maschine.",
+        "audio_title": "🎧 Audioquelle",
+        "audio_desc": "Lade eine Audiodatei (MP3, WAV, M4A) zur Analyse hoch.",
+        "drop_label": "Datei hier ablegen",
+        "active_track": "🎵 Aktiver Track:",
+        "manual_loaded": "Handbuch geladen!",
+        "memory_loaded": "Speicher geladen!",
+        "input_placeholder": "Stelle hier deine Frage...",
+        "tones": ["🤙 Cool & Pädagogisch", "👔 Technischer Experte", "⚡ Kurz & Direkt"],
+        "formats": ["📝 Vollständiges Tutorial", "✅ Checkliste (Schritt für Schritt)", "💬 Interaktiv (Schrittweise)"],
+        "sugg_combo": "🔥 Entschlüssle diesen Sound + Rezept",
+        "sugg_audio": "🥁 Analysiere den Groove",
+        "sugg_pdf": "🎛️ Erkläre eine versteckte Funktion",
+        "sugg_web": "🔍 Finde einen Sound-Design-Tipp",
+        "theme_detected": "🎨 Stimmung erkannt:",
+        "apply_theme": "Thema anwenden",
+        "back_default": "🔙 Zurück zum Standard"
+    },
+    "Italiano 🇮🇹": {
+        "settings": "Impostazioni",
+        "api_help": "ℹ️ Come avere una chiave gratis?",
+        "doc_label": "📂 **Documentazione (Manuale)**",
+        "style_label": "🧠 Stile del Tutor",
+        "memory_label": "💾 Memoria / Sessione",
+        "memory_upload": "Carica sessione",
+        "memory_download": "Scarica cronologia",
+        "reset": "🗑️ Reset",
+        "support": "❤️ Supporta",
+        "buy_coffee": "☕ Offrimi un caffè",
+        "title": "Groovebox Tutor AI",
+        "caption": "Decodifica il suono. Padroneggia la macchina.",
+        "audio_title": "🎧 Sorgente Audio",
+        "audio_desc": "Carica un file audio (MP3, WAV) per analizzarlo.",
+        "drop_label": "Trascina qui il file",
+        "active_track": "🎵 Traccia attiva:",
+        "manual_loaded": "Manuale caricato!",
+        "memory_loaded": "Memoria caricata!",
+        "input_placeholder": "Fai la tua domanda qui...",
+        "tones": ["🤙 Cool & Pedagogico", "👔 Esperto Tecnico", "⚡ Breve & Diretto"],
+        "formats": ["📝 Tutorial Completo", "✅ Checklist (Passo dopo passo)", "💬 Interattivo (Uno step alla volta)"],
+        "sugg_combo": "🔥 Decodifica suono + Ricetta",
+        "sugg_audio": "🥁 Analizza il groove",
+        "sugg_pdf": "🎛️ Spiegami una funzione nascosta",
+        "sugg_web": "🔍 Trova un trucco di Sound Design",
+        "theme_detected": "🎨 Atmosfera rilevata:",
+        "apply_theme": "Applica tema",
+        "back_default": "🔙 Torna al default"
+    },
+    "Português 🇧🇷": {
+        "settings": "Configurações",
+        "api_help": "ℹ️ Como obter chave grátis?",
+        "doc_label": "📂 **Documentação (Manual)**",
+        "style_label": "🧠 Estilo do Professor",
+        "memory_label": "💾 Memória / Sessão",
+        "memory_upload": "Carregar sessão",
+        "memory_download": "Baixar histórico",
+        "reset": "🗑️ Reset",
+        "support": "❤️ Apoiar",
+        "buy_coffee": "☕ Me paga um café",
+        "title": "Groovebox Tutor AI",
+        "caption": "Decodifique o som. Domine sua máquina.",
+        "audio_title": "🎧 Fonte de Áudio",
+        "audio_desc": "Envie um arquivo de áudio (MP3, WAV) para análise.",
+        "drop_label": "Arraste seu arquivo aqui",
+        "active_track": "🎵 Faixa ativa:",
+        "manual_loaded": "Manual carregado!",
+        "memory_loaded": "Memória carregada!",
+        "input_placeholder": "Faça sua pergunta aqui...",
+        "tones": ["🤙 Legal e Pedagógico", "👔 Especialista Técnico", "⚡ Curto e Direto"],
+        "formats": ["📝 Tutorial Completo", "✅ Checklist (Passo a passo)", "💬 Interativo (Um passo de cada vez)"],
+        "sugg_combo": "🔥 Decodifique esse som + Receita",
+        "sugg_audio": "🥁 Analise o groove",
+        "sugg_pdf": "🎛️ Explique uma função oculta",
+        "sugg_web": "🔍 Dica de Sound Design",
+        "theme_detected": "🎨 Vibe detectada:",
+        "apply_theme": "Aplicar tema",
+        "back_default": "🔙 Voltar ao padrão"
+    },
+    "日本語 (Japonais) 🇯🇵": {
+        "settings": "設定",
+        "api_help": "ℹ️ 無料APIキーの取得方法",
+        "doc_label": "📂 **ドキュメント (マニュアル)**",
+        "style_label": "🧠 先生のスタイル",
+        "memory_label": "💾 メモリ / セッション",
+        "memory_upload": "セッションをロード",
+        "memory_download": "履歴をダウンロード",
+        "reset": "🗑️ リセット",
+        "support": "❤️ 応援する",
+        "buy_coffee": "☕ コーヒーを奢る",
+        "title": "Groovebox Tutor AI",
+        "caption": "音を解読し、マシンをマスターしよう。",
+        "audio_title": "🎧 音源",
+        "audio_desc": "分析するオーディオファイル(MP3, WAV)をアップロード。",
+        "drop_label": "ここにファイルをドロップ",
+        "active_track": "🎵 再生中:",
+        "manual_loaded": "マニュアル読み込み完了!",
+        "memory_loaded": "メモリ読み込み完了!",
+        "input_placeholder": "ここに質問を入力してください...",
+        "tones": ["🤙 フレンドリー＆丁寧", "👔 技術エキスパート", "⚡ 短く簡潔に"],
+        "formats": ["📝 完全チュートリアル", "✅ チェックリスト (手順)", "💬 インタラクティブ (一歩ずつ)"],
+        "sugg_combo": "🔥 この音を再現する方法を教えて",
+        "sugg_audio": "🥁 グルーヴを分析して",
+        "sugg_pdf": "🎛️ 隠し機能を教えて",
+        "sugg_web": "🔍 サウンドデザインのコツを探す",
+        "theme_detected": "🎨 雰囲気を検出:",
+        "apply_theme": "テーマを適用",
+        "back_default": "🔙 デフォルトに戻す"
     }
 }
 
@@ -144,9 +293,9 @@ def format_history_for_download(history):
 # --- SIDEBAR ---
 with st.sidebar:
     lang = st.selectbox("Language / Langue 🌍", list(TR.keys()), index=0)
-    T = TR.get(lang, TR["Français 🇫🇷"]) # Fallback français si langue manquante
+    T = TR.get(lang, TR["Français 🇫🇷"]) 
     
-    st.image("logo.png", width=120) 
+    # PLUS DE LOGO ICI (SUPPRIMÉ)
     
     st.title(T["settings"])
     api_key = st.text_input("API Key", type="password")
@@ -160,7 +309,7 @@ with st.sidebar:
     style_tone = st.selectbox("Tone", T["tones"], index=0, label_visibility="collapsed")
     style_format = st.radio("Format", T["formats"], index=0, label_visibility="collapsed")
 
-    # 2. MÉMOIRE (NEW!)
+    # 2. MÉMOIRE
     st.markdown("---")
     st.markdown(f"### {T['memory_label']}")
     
