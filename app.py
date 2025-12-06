@@ -62,34 +62,33 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 3. DICTIONNAIRE COMPLET (TEXTES RICHES) ---
+# --- 3. DICTIONNAIRE COMPLET (CORRIGÉ) ---
 TR = {
     "Français 🇫🇷": {
-        "settings": "1. Configuration",
-        "api_label": "Clé API Google",
-        "api_help": "ℹ️ Pourquoi une clé perso ?",
-        "api_desc": "Projet open-source. L'usage de votre propre clé gratuite garantit votre indépendance.",
-        "doc_section": "2. Votre Machine",
-        "doc_help": "🔍 Trouver mon manuel officiel",
-        "manual_upload": "Déposer le Manuel PDF ici",
-        "level_label": "Ton niveau actuel",
-        "levels": ["Débutant (Explique-moi)", "Intermédiaire (Guide-moi)", "Expert (Valeurs brutes)"],
-        "audio_title": "🎧 Le Son à Analyser",
-        "audio_subtitle": "Glissez un fichier ici. L'IA l'analysera AUTOMATIQUEMENT.",
-        "audio_label": "Fichier Audio",
-        "coach_section": "🧪 Mode Coach (Comparaison)",
-        "coach_desc": "Charge ton propre essai ici. L'IA te donnera une NOTE sur 100.",
-        "coach_label": "Mon Essai (mp3/wav)",
-        "vision_section": "👁️ Vision Debug",
-        "vision_desc": "Montre tes réglages (Photo)",
-        "vision_toggle": "Activer Caméra / Upload",
-        "style_section": "3. Style Pédagogique",
-        "memory_title": "4. 💾 Session & Mémoire",
-        "memory_desc": "**Sauvegarder votre progression :**\nCliquez sur **💾 Télécharger** pour récupérer l'historique.",
-        "memory_load": "📂 Reprendre une session précédente",
-        "memory_save": "💾 Télécharger Session",
-        "reset": "🔄 Nouvelle Session",
-        "about": "📖 Philosophie du projet",
-        "about_text": """**Groovebox Tutor** est né d'une frustration : celle de voir des musiciens acheter des machines incroyables... pour finalement copier des presets trouvés sur Reddit.
+        "title": "Groovebox Tutor",
+        "subtitle": "Ton binôme pédagogique. On décortique, tu apprends.",
+        "settings": "Configuration", 
+        "api_label": "Clé API Google", 
+        "doc_section": "2. Votre Machine", 
+        "doc_help": "Manuels",
+        "manual_upload": "Manuel PDF", 
+        "manual_loaded": "Manuel OK",
+        "audio_title": "🎧 Audio Cible",
+        "coach_section": "🧪 Mode Coach", 
+        "coach_desc": "Upload ton essai", 
+        "coach_label": "Mon Essai",
+        "vision_section": "👁️ Vision", 
+        "vision_desc": "Photo réglages", 
+        "vision_toggle": "Caméra",
+        "style_section": "Style", 
+        "memory_load": "Sauvegarde", 
+        "placeholder": "Pose une question...",
+        "analyzing": "Analyse...",
+        "sugg_1": "Analyse ce son",
+        "sugg_2": "Structure rythmique",
+        "sugg_3": "Fonction cachée"
+    }
+}
 
 ### Notre vision
 Nous croyons que **comprendre** vaut mieux que **copier**.
