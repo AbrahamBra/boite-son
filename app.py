@@ -91,7 +91,6 @@ L'IA n'est pas un chatbot passif. C'est un **Coach Proactif**.
 def format_history_for_context(history):
     """
     Transforme TOUT l'historique en texte.
-    Gemini 1.5 a une mémoire immense, on ne limite plus aux 10 derniers messages.
     """
     context_str = "\n--- 💾 MÉMOIRE DE LA SESSION (HISTORIQUE COMPLET) ---\n"
     for msg in history:
@@ -115,12 +114,10 @@ def build_system_prompt(lang, style_tone, user_level, has_manual, chat_context, 
         level_instr = """
         🚨 MODE : DÉBUTANT ABSOLU (NOOB TOTAL)
         L'utilisateur est perdu. Il ne connaît PAS le vocabulaire (LFO, Filtre, Enveloppe = Interdit).
-        
-        TES RÈGLES D'OR :
+        RÈGLES D'OR :
         1. Une seule action physique à la fois. (Ex: "Tourne le bouton A").
-        2. Attends que l'utilisateur dise "Ok" ou "Fait" avant de donner la suite.
-        3. Ne donne JAMAIS d'explication théorique ("On fait ça pour éclaircir le son"). On s'en fiche. On veut juste que ça marche.
-        4. Guide-le géographiquement ("Le bouton rouge en haut à gauche").
+        2. Attends que l'utilisateur dise "Ok" avant de passer à la suite.
+        3. Guide-le géographiquement ("Le bouton rouge en haut à gauche").
         """
     elif "Expert" in user_level:
         level_instr = "MODE : EXPERT. Donne les valeurs MIDI (0-127), fréquences Hz, et pages du manuel. Sois dense."
@@ -129,56 +126,46 @@ def build_system_prompt(lang, style_tone, user_level, has_manual, chat_context, 
 
     manual_instr = "Cite toujours la page du manuel PDF." if has_manual else "Base-toi sur tes connaissances."
     
-    # 3. ASSEMBLAGE DU PROMPT (C'est ici que tu avais l'erreur)
+    # 3. ASSEMBLAGE DU PROMPT (CORRIGÉ : PLUS DE DOUBLON ICI)
     base = f"""
-    Tu es Groovebox Tutor.
+    Tu es Groovebox Tutor (Powered by Gemini 2.0).
     
     TON PERSONA : {selected_persona}
-    
-    TES INSTRUCTIONS PÉDAGOGIQUES :
-    {level_instr}
-    
-    SOURCE DOCUMENTAIRE :
-    {manual_instr}
+    TES INSTRUCTIONS PÉDAGOGIQUES : {level_instr}
+    SOURCE DOCUMENTAIRE : {manual_instr}
     
     CONTEXTE ACTUEL :
     {chat_context}
     
     ⚡ INTERDICTION FORMELLE :
     Si l'historique montre que tu as posé une question (ex: "Kick ou Snare ?") et que l'utilisateur a répondu ("Kick"),
-    NE FAIS PAS DE COMMENTAIRES INUTILES ("Ah super choix !").
-    DÉMARRE IMMÉDIATEMENT L'INSTRUCTION N°1 pour le Kick.
+    NE FAIS PAS DE COMMENTAIRES INUTILES. DÉMARRE IMMÉDIATEMENT L'INSTRUCTION N°1.
     """
     
     # 4. GESTION DES TRIGGERS (ACTION RÉFLEXE)
     if trigger_mode == "AUTO_ANALYSE":
         return base + """
         🚨 PRIORITÉ ABSOLUE : NOUVEAU FICHIER AUDIO DÉTECTÉ.
-        Ne dis pas bonjour.
-        1. Analyse le style et les instruments du fichier audio.
-        2. Fais une liste à puces des éléments détectés (Kick, Bass, Lead...).
+        1. Analyse le style et les instruments.
+        2. Fais une liste à puces des éléments détectés.
         3. Demande à l'utilisateur : "Par quoi veux-tu commencer ?"
         """
     elif trigger_mode == "AUTO_COACH":
         return base + """
         🚨 PRIORITÉ ABSOLUE : COMPARAISON D'ESSAI.
-        L'utilisateur tente de copier le son.
         1. Donne une note de ressemblance /100.
-        2. Identifie LE paramètre principal qui cloche (ex: "Ton son est trop sourd").
+        2. Identifie LE paramètre principal qui cloche.
         3. Dis quel bouton tourner pour corriger.
         """
     elif trigger_mode == "AUTO_MANUAL":
         return base + """
         🚨 PRIORITÉ ABSOLUE : MANUEL REÇU.
-        Confirme juste la marque et le modèle de la machine détectée dans le PDF.
-        Demande : "Veux-tu un tuto sound design ou une explication de fonction ?"
+        Confirme le modèle de la machine. Demande : "Veux-tu un tuto sound design ou une explication de fonction ?"
         """
     elif trigger_mode == "VISION":
         return base + """
         🚨 PRIORITÉ ABSOLUE : ANALYSE VISUELLE.
-        Regarde la photo des réglages.
-        Compare avec ce qu'il faudrait pour le son cible.
-        Si un bouton est mal placé, dis-le (ex: "Ton Cutoff est trop bas, ouvre-le vers 14h").
+        Regarde la photo des réglages. Compare avec ce qu'il faudrait pour le son cible.
         """
     
     return base
@@ -346,8 +333,9 @@ else:
                         
                         req.append(prompt)
 
-                        # 4. Appel Modèle (Stable)
-                        model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt)
+                        # 4. Appel Modèle (VERSION 2.0 FLASH EXPERIMENTAL)
+                        # C'est la version la plus récente et rapide disponible via API
+                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
                         resp = model.generate_content(req)
                         
                         # 5. Affichage
