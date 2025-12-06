@@ -3,9 +3,11 @@ import google.generativeai as genai
 import os
 import tempfile
 import time
+import pathlib
+import re
 from datetime import datetime
 
-# --- 1. SETUP & CONFIGURATION ---
+# --- 1. CONFIGURATION ---
 st.set_page_config(
     page_title="Groovebox Tutor",
     page_icon="logo.png",
@@ -13,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS "PREMIUM STUDIO" ---
+# --- 2. CSS PREMIUM (DESIGN APPLE/ABLETON) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
@@ -23,253 +25,286 @@ st.markdown("""
         color: #E0E0E0;
     }
     
-    .stApp {
-        background-color: #0E1117;
-    }
-    [data-testid="stSidebar"] {
-        background-color: #0E1117;
-        border-right: 1px solid #1F1F1F;
-    }
+    .stApp { background-color: #0E1117; }
+    [data-testid="stSidebar"] { background-color: #0E1117; border-right: 1px solid #1F1F1F; }
 
     h1 { font-weight: 600; letter-spacing: -1px; color: #FFFFFF; }
     h2, h3 { font-weight: 400; color: #A0A0A0; }
 
     .stTextInput > div > div > input {
-        background-color: #161920;
-        border: 1px solid #303030;
-        color: white;
-        border-radius: 8px;
-        padding: 10px;
+        background-color: #161920; border: 1px solid #303030; color: white; border-radius: 8px; padding: 10px;
     }
-    .stTextInput > div > div > input:focus {
-        border-color: #4A4A4A;
-        box-shadow: none;
-    }
+    .stTextInput > div > div > input:focus { border-color: #4A4A4A; box-shadow: none; }
 
     .stButton > button {
-        background-color: #161920;
-        color: white;
-        border: 1px solid #303030;
-        border-radius: 8px;
-        font-weight: 500;
-        transition: all 0.2s;
+        background-color: #161920; color: white; border: 1px solid #303030; border-radius: 8px; font-weight: 500; transition: all 0.2s;
     }
-    .stButton > button:hover {
-        background-color: #20242C;
-        border-color: #FFFFFF;
-    }
+    .stButton > button:hover { background-color: #20242C; border-color: #FFFFFF; }
     
     div[data-testid="stHorizontalBlock"] > div:first-child button {
-        background-color: #FFFFFF;
-        color: #000000;
-        border: none;
+        background-color: #FFFFFF; color: #000000; border: none;
     }
-    div[data-testid="stHorizontalBlock"] > div:first-child button:hover {
-        background-color: #E0E0E0;
-    }
+    div[data-testid="stHorizontalBlock"] > div:first-child button:hover { background-color: #E0E0E0; }
 
     div[data-testid="stFileUploader"] {
-        background-color: #12141A;
-        border: 1px dashed #303030;
-        border-radius: 12px;
-        padding: 30px;
-        transition: border 0.3s;
+        background-color: #12141A; border: 1px dashed #303030; border-radius: 12px; padding: 30px; transition: border 0.3s;
     }
-    div[data-testid="stFileUploader"]:hover {
-        border-color: #606060;
-    }
+    div[data-testid="stFileUploader"]:hover { border-color: #606060; }
     
     button[kind="secondary"] {
-        background-color: transparent;
-        border: 1px solid #303030;
-        border-radius: 20px;
-        color: #A0A0A0;
-        font-size: 13px;
+        background-color: transparent; border: 1px solid #303030; border-radius: 20px; color: #A0A0A0; font-size: 13px;
     }
-    button[kind="secondary"]:hover {
-        border-color: #FFFFFF;
-        color: #FFFFFF;
-        background-color: transparent;
-    }
+    button[kind="secondary"]:hover { border-color: #FFFFFF; color: #FFFFFF; background-color: transparent; }
 
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     .block-container {padding-top: 3rem; padding-bottom: 5rem;}
     
-    .stTextInput label { font-size: 12px; color: #606060; }
+    /* Style spécifique pour l'info box */
+    div[data-testid="stAlert"] {
+        background-color: rgba(255, 255, 255, 0.05); border: 1px solid #303030; color: #E0E0E0; border-radius: 8px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. DICTIONNAIRE TRADUCTION COMPLET ---
+# --- 3. CONTENU RICHE (7 LANGUES + VISION PÉDAGOGIQUE) ---
 TR = {
     "Français 🇫🇷": {
-        "settings": "Paramètres",
+        "settings": "Réglages",
         "api_label": "Clé API Google",
+        "api_help": "Pourquoi une clé perso ?",
+        "api_desc": "Projet open-source. L'usage de votre clé gratuite garantit l'indépendance de l'outil.",
         "doc_section": "DOCUMENTATION",
         "doc_help": "Trouver mon manuel officiel",
         "manual_upload": "Fichier PDF (Manuel)",
+        "helper_machine": "Votre machine :",
+        "helper_dl": "Télécharger le PDF :",
+        "helper_site": "Site Officiel",
         "audio_section": "STUDIO",
         "audio_label": "Fichier Audio (Source)",
         "memory_section": "SESSION",
-        "memory_load": "Charger historique",
+        "memory_load": "Charger historique (.txt)",
         "memory_save": "Sauvegarder",
         "reset": "Nouvelle Session",
-        "about": "À propos",
+        "about": "Philosophie du projet",
+        "about_text": "**Groovebox Tutor** est un outil libre.\nNotre but n'est pas de copier, mais de **comprendre**. L'IA agit comme un binôme technique.",
+        "support": "Soutenir (Don)",
         "title": "Groovebox Tutor",
-        "subtitle": "Assistant technique piloté par IA. Analyse sonore et documentation unifiée.",
+        "subtitle": "Votre binôme technique. Décryptez le son. Maîtrisez votre machine.",
         "placeholder": "Posez une question technique...",
-        "step_1": "1. Entrez votre Clé API (Menu gauche)",
-        "step_2": "2. Chargez votre Manuel PDF",
-        "step_3": "3. Glissez un son ci-dessous",
-        "legal": "Outil d'analyse pédagogique.",
+        "onboarding": "👋 **Bienvenue ! Pour commencer :**\n1. **Clé API :** Entrez votre clé Google gratuite dans le menu à gauche.\n2. **Manuel :** Chargez le PDF de votre machine.\n3. **Son :** Glissez un fichier audio ci-dessous pour lancer l'analyse.",
+        "legal": "⚠️ Outil pédagogique. L'inspiration est légale, le plagiat ne l'est pas.",
         "sugg_1": "Analyse ce son",
         "sugg_2": "Structure rythmique",
-        "sugg_3": "Fonction cachée"
+        "sugg_3": "Fonction cachée",
+        "style_label": "Approche Pédagogique",
+        "tones": ["🤙 Mentor Cool", "👔 Expert Technique", "⚡ Direct"],
+        "formats": ["📝 Cours Complet", "✅ Checklist", "💬 Interactif"],
+        "manual_loaded": "Manuel assimilé",
+        "active_track": "Piste active :"
     },
     "English 🇬🇧": {
         "settings": "Settings",
         "api_label": "Google API Key",
+        "api_help": "Why a personal key?",
+        "api_desc": "Open-source project. Using your own free key ensures tool independence.",
         "doc_section": "DOCUMENTATION",
         "doc_help": "Find official manual",
         "manual_upload": "PDF File (Manual)",
+        "helper_machine": "Your machine:",
+        "helper_dl": "Download PDF:",
+        "helper_site": "Official Site",
         "audio_section": "STUDIO",
         "audio_label": "Audio File (Source)",
         "memory_section": "SESSION",
-        "memory_load": "Load history",
+        "memory_load": "Load history (.txt)",
         "memory_save": "Save",
         "reset": "New Session",
-        "about": "About",
+        "about": "Project Philosophy",
+        "about_text": "**Groovebox Tutor** is free software.\nOur goal is not to copy, but to **understand**. The AI acts as a technical partner.",
+        "support": "Support (Donate)",
         "title": "Groovebox Tutor",
-        "subtitle": "AI-powered technical assistant. Sound analysis and documentation unified.",
+        "subtitle": "Your technical partner. Decode sound. Master your gear.",
         "placeholder": "Ask a technical question...",
-        "step_1": "1. Enter API Key (Left Menu)",
-        "step_2": "2. Upload PDF Manual",
-        "step_3": "3. Drop audio below",
-        "legal": "Educational analysis tool.",
+        "onboarding": "👋 **Welcome! To start:**\n1. **API Key:** Enter your free Google Key in the left menu.\n2. **Manual:** Upload your machine's PDF.\n3. **Sound:** Drop an audio file below to start analysis.",
+        "legal": "⚠️ Educational tool. Inspiration is legal, plagiarism is not.",
         "sugg_1": "Analyze this sound",
         "sugg_2": "Rhythmic structure",
-        "sugg_3": "Hidden feature"
+        "sugg_3": "Hidden feature",
+        "style_label": "Pedagogical Approach",
+        "tones": ["🤙 Cool Mentor", "👔 Technical Expert", "⚡ Direct"],
+        "formats": ["📝 Full Lesson", "✅ Checklist", "💬 Interactive"],
+        "manual_loaded": "Manual loaded",
+        "active_track": "Active track:"
     },
     "Español 🇪🇸": {
         "settings": "Configuración",
         "api_label": "Clave API Google",
+        "api_help": "¿Por qué clave personal?",
+        "api_desc": "Proyecto open-source. Usar tu propia clave garantiza la independencia.",
         "doc_section": "DOCUMENTACIÓN",
         "doc_help": "Encontrar manual oficial",
         "manual_upload": "Archivo PDF (Manual)",
+        "helper_machine": "Tu máquina:",
+        "helper_dl": "Descargar PDF:",
+        "helper_site": "Sitio Oficial",
         "audio_section": "ESTUDIO",
         "audio_label": "Archivo de Audio",
         "memory_section": "SESIÓN",
         "memory_load": "Cargar historial",
         "memory_save": "Guardar",
         "reset": "Nueva Sesión",
-        "about": "Acerca de",
+        "about": "Filosofía",
+        "about_text": "**Groovebox Tutor** es software libre.\nNuestro objetivo es **entender**. La IA actúa como un socio técnico.",
+        "support": "Apoyar (Donar)",
         "title": "Groovebox Tutor",
-        "subtitle": "Asistente técnico con IA. Análisis de sonido y documentación unificada.",
+        "subtitle": "Tu socio técnico. Decodifica el sonido. Domina tu máquina.",
         "placeholder": "Haz una pregunta técnica...",
-        "step_1": "1. Ingresa Clave API (Menú izq)",
-        "step_2": "2. Sube Manual PDF",
-        "step_3": "3. Arrastra audio abajo",
-        "legal": "Herramienta educativa.",
+        "onboarding": "👋 **¡Bienvenido! Para empezar:**\n1. **Clave API:** Ingresa tu clave gratuita a la izquierda.\n2. **Manual:** Sube el PDF.\n3. **Sonido:** Arrastra un audio abajo.",
+        "legal": "⚠️ Herramienta educativa.",
         "sugg_1": "Analiza este sonido",
         "sugg_2": "Estructura rítmica",
-        "sugg_3": "Función oculta"
+        "sugg_3": "Función oculta",
+        "style_label": "Enfoque Pedagógico",
+        "tones": ["🤙 Mentor Genial", "👔 Experto Técnico", "⚡ Directo"],
+        "formats": ["📝 Lección Completa", "✅ Checklist", "💬 Interactivo"],
+        "manual_loaded": "Manual cargado",
+        "active_track": "Pista activa:"
     },
     "Deutsch 🇩🇪": {
         "settings": "Einstellungen",
         "api_label": "Google API Key",
+        "api_help": "Warum eigener Key?",
+        "api_desc": "Open-Source-Projekt. Dein eigener Key garantiert Unabhängigkeit.",
         "doc_section": "DOKUMENTATION",
         "doc_help": "Offizielles Handbuch finden",
         "manual_upload": "PDF-Datei (Handbuch)",
+        "helper_machine": "Deine Maschine:",
+        "helper_dl": "PDF herunterladen:",
+        "helper_site": "Offizielle Seite",
         "audio_section": "STUDIO",
         "audio_label": "Audiodatei",
         "memory_section": "SITZUNG",
         "memory_load": "Verlauf laden",
         "memory_save": "Speichern",
         "reset": "Neue Sitzung",
-        "about": "Über",
+        "about": "Philosophie",
+        "about_text": "**Groovebox Tutor** ist freie Software.\nZiel ist **Verstehen**. Die KI ist dein technischer Partner.",
+        "support": "Unterstützen",
         "title": "Groovebox Tutor",
-        "subtitle": "KI-gestützter technischer Assistent. Soundanalyse und Dokumentation vereint.",
-        "placeholder": "Stelle eine technische Frage...",
-        "step_1": "1. API Key eingeben (Links)",
-        "step_2": "2. PDF-Handbuch laden",
-        "step_3": "3. Audio unten ablegen",
-        "legal": "Bildungstool.",
-        "sugg_1": "Analysiere diesen Sound",
-        "sugg_2": "Rhythmische Struktur",
-        "sugg_3": "Versteckte Funktion"
+        "subtitle": "Dein technischer Partner. Entschlüssle den Sound. Beherrsche deine Maschine.",
+        "placeholder": "Stelle eine Frage...",
+        "onboarding": "👋 **Willkommen!**\n1. **API Key:** Gib deinen Key links ein.\n2. **Handbuch:** Lade das PDF hoch.\n3. **Sound:** Ziehe eine Datei nach unten.",
+        "legal": "⚠️ Bildungstool.",
+        "sugg_1": "Analysiere Sound",
+        "sugg_2": "Rhythmus",
+        "sugg_3": "Versteckte Funktion",
+        "style_label": "Pädagogischer Ansatz",
+        "tones": ["🤙 Cool", "👔 Experte", "⚡ Direkt"],
+        "formats": ["📝 Lektion", "✅ Checkliste", "💬 Interaktiv"],
+        "manual_loaded": "Handbuch geladen",
+        "active_track": "Aktiver Track:"
     },
     "Italiano 🇮🇹": {
         "settings": "Impostazioni",
         "api_label": "Chiave API Google",
+        "api_help": "Perché chiave personale?",
+        "api_desc": "Progetto open-source. La tua chiave garantisce indipendenza.",
         "doc_section": "DOCUMENTAZIONE",
         "doc_help": "Trova manuale ufficiale",
         "manual_upload": "File PDF (Manuale)",
+        "helper_machine": "La tua macchina:",
+        "helper_dl": "Scarica PDF:",
+        "helper_site": "Sito Ufficiale",
         "audio_section": "STUDIO",
         "audio_label": "File Audio",
         "memory_section": "SESSIONE",
         "memory_load": "Carica cronologia",
         "memory_save": "Salva",
         "reset": "Nuova Sessione",
-        "about": "Info",
+        "about": "Filosofia",
+        "about_text": "**Groovebox Tutor** è software libero.\nL'obiettivo è **capire**. L'IA è il tuo partner tecnico.",
+        "support": "Supporta",
         "title": "Groovebox Tutor",
-        "subtitle": "Assistente tecnico AI. Analisi sonora e documentazione unificata.",
-        "placeholder": "Fai una domanda tecnica...",
-        "step_1": "1. Inserisci API Key (Menu sx)",
-        "step_2": "2. Carica Manuale PDF",
-        "step_3": "3. Trascina audio sotto",
-        "legal": "Strumento educativo.",
-        "sugg_1": "Analizza questo suono",
-        "sugg_2": "Struttura ritmica",
-        "sugg_3": "Funzione nascosta"
+        "subtitle": "Il tuo partner tecnico. Decodifica il suono. Padroneggia la macchina.",
+        "placeholder": "Fai una domanda...",
+        "onboarding": "👋 **Benvenuto!**\n1. **API Key:** Inserisci la chiave a sinistra.\n2. **Manuale:** Carica il PDF.\n3. **Suono:** Trascina un file audio qui sotto.",
+        "legal": "⚠️ Strumento educativo.",
+        "sugg_1": "Analizza suono",
+        "sugg_2": "Ritmo",
+        "sugg_3": "Funzione nascosta",
+        "style_label": "Approccio Pedagogico",
+        "tones": ["🤙 Mentor Cool", "👔 Esperto", "⚡ Diretto"],
+        "formats": ["📝 Lezione", "✅ Checklist", "💬 Interattivo"],
+        "manual_loaded": "Manuale caricato",
+        "active_track": "Traccia attiva:"
     },
     "Português 🇧🇷": {
         "settings": "Configurações",
         "api_label": "Chave API Google",
+        "api_help": "Por que chave pessoal?",
+        "api_desc": "Projeto open-source. Sua chave garante independência.",
         "doc_section": "DOCUMENTAÇÃO",
         "doc_help": "Encontrar manual oficial",
         "manual_upload": "Arquivo PDF (Manual)",
+        "helper_machine": "Sua máquina:",
+        "helper_dl": "Baixar PDF:",
+        "helper_site": "Site Oficial",
         "audio_section": "ESTÚDIO",
         "audio_label": "Arquivo de Áudio",
         "memory_section": "SESSÃO",
         "memory_load": "Carregar histórico",
         "memory_save": "Salvar",
         "reset": "Nova Sessão",
-        "about": "Sobre",
+        "about": "Filosofia",
+        "about_text": "**Groovebox Tutor** é software livre.\nO objetivo é **entender**. A IA é seu parceiro técnico.",
+        "support": "Apoiar",
         "title": "Groovebox Tutor",
-        "subtitle": "Assistente técnico com IA. Análise sonora e documentação unificada.",
-        "placeholder": "Faça uma pergunta técnica...",
-        "step_1": "1. Insira Chave API (Menu esq)",
-        "step_2": "2. Envie Manual PDF",
-        "step_3": "3. Arraste áudio abaixo",
-        "legal": "Ferramenta educativa.",
-        "sugg_1": "Analise este som",
-        "sugg_2": "Estrutura rítmica",
-        "sugg_3": "Função oculta"
+        "subtitle": "Seu parceiro técnico. Decodifique o som. Domine sua máquina.",
+        "placeholder": "Faça uma pergunta...",
+        "onboarding": "👋 **Bem-vindo!**\n1. **Chave API:** Insira sua chave à esquerda.\n2. **Manual:** Envie o PDF.\n3. **Som:** Arraste um arquivo abaixo.",
+        "legal": "⚠️ Ferramenta educativa.",
+        "sugg_1": "Analise o som",
+        "sugg_2": "Ritmo",
+        "sugg_3": "Função oculta",
+        "style_label": "Abordagem Pedagógica",
+        "tones": ["🤙 Mentor Legal", "👔 Especialista", "⚡ Direto"],
+        "formats": ["📝 Aula", "✅ Checklist", "💬 Interativo"],
+        "manual_loaded": "Manual carregado",
+        "active_track": "Faixa ativa:"
     },
     "日本語 🇯🇵": {
         "settings": "設定",
         "api_label": "Google APIキー",
+        "api_help": "なぜ個人のキー？",
+        "api_desc": "オープンソースプロジェクトです。個人のキーで独立性を保証します。",
         "doc_section": "ドキュメント",
         "doc_help": "公式マニュアルを探す",
         "manual_upload": "PDFファイル (マニュアル)",
+        "helper_machine": "機種:",
+        "helper_dl": "PDFをダウンロード:",
+        "helper_site": "公式サイト",
         "audio_section": "スタジオ",
         "audio_label": "オーディオファイル",
         "memory_section": "セッション",
         "memory_load": "履歴をロード",
         "memory_save": "保存",
         "reset": "新しいセッション",
-        "about": "概要",
+        "about": "哲学",
+        "about_text": "**Groovebox Tutor** はフリーソフトウェアです。\n目的はコピーではなく**理解**です。",
+        "support": "支援する",
         "title": "Groovebox Tutor",
-        "subtitle": "AI技術アシスタント。音声分析とドキュメントの統合。",
-        "placeholder": "技術的な質問をしてください...",
-        "step_1": "1. APIキーを入力 (左メニュー)",
-        "step_2": "2. PDFマニュアルをロード",
-        "step_3": "3. 音声を下にドロップ",
-        "legal": "教育用分析ツール。",
+        "subtitle": "あなたの技術パートナー。音を解読し、マシンを支配する。",
+        "placeholder": "質問してください...",
+        "onboarding": "👋 **ようこそ！**\n1. **APIキー:** 左のメニューに入力してください。\n2. **マニュアル:** PDFをロード。\n3. **音:** 下にファイルをドロップ。",
+        "legal": "⚠️ 教育用ツール。",
         "sugg_1": "この音を分析",
-        "sugg_2": "リズム構造",
-        "sugg_3": "隠し機能"
+        "sugg_2": "リズム",
+        "sugg_3": "隠し機能",
+        "style_label": "教育アプローチ",
+        "tones": ["🤙 フレンドリー", "👔 エキスパート", "⚡ 簡潔"],
+        "formats": ["📝 レッスン", "✅ 手順", "💬 対話モード"],
+        "manual_loaded": "マニュアル完了",
+        "active_track": "再生中:"
     }
 }
 
@@ -298,57 +333,73 @@ def format_history(history):
 
 # --- 5. INTERFACE UTILISATEUR ---
 
-# --- SIDEBAR ---
+# --- SIDEBAR (DESIGN STUDIO) ---
 with st.sidebar:
-    # Choix de la langue
+    # Langue
     lang_options = list(TR.keys())
     lang = st.selectbox("Langue / Language", lang_options, label_visibility="collapsed")
-    T = TR[lang] # Chargement des textes dans la bonne langue
+    T = TR[lang]
     
     st.markdown("### " + T["settings"])
     
     # API Key
     api_key = st.text_input(T["api_label"], type="password", placeholder="AIzaSy...")
-    if not api_key:
-        st.caption("Une clé est requise pour utiliser l'IA.")
-        with st.expander("Obtenir une clé / Get Key"):
-            st.markdown("[Google AI Studio](https://aistudio.google.com/) (Free)")
+    with st.expander(T["api_help"]):
+        st.caption(T["api_desc"])
+        st.markdown("[Google AI Studio](https://aistudio.google.com/) (Free)")
 
     st.markdown("---")
     
     # Documentation
     st.caption(T["doc_section"])
     with st.expander(T["doc_help"]):
-        st.markdown("""
-        - [Elektron](https://www.elektron.se/en/support-downloads)
-        - [Roland](https://www.roland.com/global/support/)
-        - [Korg](https://www.korg.com/us/support/)
-        - [Akai](https://www.akaipro.com/support)
-        """)
-    
+        MANUAL_LINKS = {
+            "Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii",
+            "Roland SP-404 MKII": "https://www.roland.com/global/products/sp-404mk2/support/",
+            "TE EP-133 K.O. II": "https://teenage.engineering/downloads/ep-133",
+            "Korg Volca Sample 2": "https://www.korg.com/us/support/download/product/0/867/",
+            "Akai MPC One/Live": "https://www.akaipro.com/mpc-one",
+            "Novation Circuit Tracks": "https://downloads.novationmusic.com/novation/circuit/circuit-tracks",
+            "Arturia MicroFreak": "https://www.arturia.com/products/hardware-synths/microfreak/resources"
+        }
+        selected_machine = st.selectbox(T["helper_machine"], list(MANUAL_LINKS.keys()))
+        st.markdown(T["helper_dl"])
+        st.link_button(f"⬇️ {selected_machine} - {T['helper_site']}", MANUAL_LINKS[selected_machine], use_container_width=True)
+        
     uploaded_pdf = st.file_uploader(T["manual_upload"], type=["pdf"], label_visibility="collapsed")
     if uploaded_pdf:
         st.success(f"Actif : {uploaded_pdf.name}")
 
     st.markdown("---")
     
-    # Session / Mémoire
+    # Personnalisation
+    st.caption(T["style_label"])
+    style_tone = st.selectbox("Tone", T["tones"], index=0, label_visibility="collapsed")
+    style_format = st.radio("Format", T["formats"], index=0, label_visibility="collapsed")
+
+    st.markdown("---")
+
+    # Session
     st.caption(T["memory_section"])
+    uploaded_memory = st.file_uploader(T["memory_load"], type=["txt"], key="mem_up", label_visibility="collapsed")
+    if uploaded_memory:
+        st.session_state.memory_content = uploaded_memory.getvalue().decode("utf-8")
+        st.success("OK")
+
     col_a, col_b = st.columns(2)
     with col_a:
         if st.button(T["reset"], use_container_width=True):
             st.session_state.clear()
             st.rerun()
     with col_b:
-        # Bouton Download (Visible seulement si historique existe)
         if "chat_history" in st.session_state and st.session_state.chat_history:
             history_txt = format_history(st.session_state.chat_history)
             st.download_button(T["memory_save"], history_txt, "session.txt", "text/plain", use_container_width=True)
 
     st.markdown("---")
     with st.expander(T["about"]):
-        st.caption("Groovebox Tutor is a free Open Source project dedicated to sound synthesis education.")
-        st.markdown("[Support / Donate](https://www.buymeacoffee.com/)")
+        st.markdown(T["about_text"])
+        st.markdown(f"[{T['support']}](https://www.buymeacoffee.com/)")
 
 # --- MAIN AREA ---
 st.title(T["title"])
@@ -356,15 +407,13 @@ st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;
 
 # Message d'accueil (Onboarding)
 if not api_key:
-    st.info(f"{T['step_1']}")
-elif not uploaded_pdf:
-    st.info(f"{T['step_2']}")
-elif "current_audio_path" not in st.session_state:
-    st.info(f"{T['step_3']}")
+    st.info(T["onboarding"])
 
 # Zone Audio
 with st.container():
     uploaded_audio = st.file_uploader(T["audio_label"], type=["mp3", "wav", "m4a"], label_visibility="collapsed")
+    if not uploaded_audio:
+        st.caption(T["legal"])
     
     if uploaded_audio:
         if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
@@ -376,6 +425,7 @@ with st.container():
                 st.rerun()
 
     if "current_audio_path" in st.session_state:
+        st.success(f"{T['active_track']} **{st.session_state.get('current_audio_name', 'Inconnu')}**")
         st.audio(st.session_state.current_audio_path)
 
 # --- CHAT ENGINE ---
@@ -384,12 +434,12 @@ if api_key:
     
     # PDF Processing
     if uploaded_pdf and "pdf_ref" not in st.session_state:
-        with st.status("Lecture du manuel / Reading manual...", expanded=False) as status:
+        with st.status("...", expanded=False) as status:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t: t.write(uploaded_pdf.getvalue()); p=t.name
             r = upload_pdf_to_gemini(p)
             if r: 
                 st.session_state.pdf_ref = r
-                status.update(label="Manuel assimilé / Ready", state="complete")
+                status.update(label=T["manual_loaded"], state="complete")
 
     # Init History
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
@@ -418,8 +468,18 @@ if api_key:
         try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         except: tools = None
         
-        # Le prompt système force l'IA à parler dans la langue choisie par 'lang'
-        sys_prompt = f"Tu es un expert musical pédagogue. Réponds impérativement en : {lang}. Sois clair et technique."
+        # PROMPT AVANCÉ
+        memory_context = ""
+        if "memory_content" in st.session_state:
+            memory_context = f"CONTEXTE MEMOIRE:\n{st.session_state.memory_content}\n"
+
+        sys_prompt = f"""
+        Tu es un expert musical pédagogue (Binôme technique).
+        Langue: {lang}. Style: {style_tone}. Format: {style_format}.
+        {memory_context}
+        MISSION: Analyse l'audio, utilise le manuel PDF, explique la synthèse sonore.
+        BUT: Rendre l'utilisateur autonome. Ne pas juste donner la solution, expliquer le pourquoi.
+        """
         
         model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=sys_prompt, tools=tools)
         
