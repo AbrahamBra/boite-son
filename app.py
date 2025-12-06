@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS PREMIUM ---
+# --- 2. CSS PREMIUM (Ton CSS Original) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
@@ -57,7 +57,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. DICTIONNAIRE COMPLET ---
+# --- 3. DICTIONNAIRE COMPLET (Ton texte original + Ajouts pour le Mode Coach) ---
 TR = {
     "Français 🇫🇷": {
         "settings": "1. Configuration",
@@ -70,6 +70,11 @@ TR = {
         "audio_title": "🎧 Le Son à Analyser",
         "audio_subtitle": "C'est ici que la magie opère. Glissez un fichier pour lancer l'écoute.",
         "audio_label": "Fichier Audio",
+        # --- AJOUT V2 (Coach) ---
+        "coach_section": "🧪 Mode Coach (Comparaison)",
+        "coach_desc": "Chargez votre propre essai. L'IA le comparera à la cible.",
+        "coach_label": "Mon Essai (mp3/wav)",
+        # ------------------------
         "style_section": "3. Style Pédagogique",
         "memory_title": "4. 💾 Session & Mémoire",
         "memory_help": "💡 Comment ça marche ?",
@@ -125,6 +130,11 @@ Parce que la connaissance doit être accessible. Ce projet est open-source et le
         "audio_title": "🎧 The Sound",
         "audio_subtitle": "Magic happens here. Drop your audio file.",
         "audio_label": "Audio File",
+        # --- AJOUT V2 (Coach) ---
+        "coach_section": "🧪 Coach Mode (Comparison)",
+        "coach_desc": "Upload your attempt here. AI will compare it with the target.",
+        "coach_label": "My Attempt (mp3/wav)",
+        # ------------------------
         "style_section": "3. Teaching Style",
         "memory_title": "4. 💾 Session & Memory",
         "memory_help": "💡 How does it work?",
@@ -170,6 +180,7 @@ Because knowledge should be accessible. This project is open-source and will sta
         "session_reloaded": "✅ Session reloaded! The AI remembers the context."
     }
 }
+
 # --- 4. FONCTIONS ---
 def get_mime_type(filename):
     if filename.endswith('.m4a'): return 'audio/mp4'
@@ -231,34 +242,14 @@ STYLE :
 
 MANUEL : {manual_instruction}
 
-COMMENT RÉPONDRE :
-
-Si question SANS audio :
-- Réponds directement avec des étapes claires
-- Donne des fourchettes de valeurs (ex: cutoff 30-50%)
-- Explique pourquoi ça marche
-- NE demande PAS de fichier audio
-- NE pose PAS de questions socratiques
-
-Si audio partagé :
-- Analyse : fréquences, envelope, effets
-- Explique comment recréer avec étapes concrètes
-
-NE FAIS JAMAIS :
-- Poser des questions type "Qu'en penses-tu ?"
-- Donner des valeurs exactes (ex: Cutoff=63)
-- Fournir un preset clé-en-main
-
-FAIS TOUJOURS :
-- Répondre directement
-- Expliquer le pourquoi technique
-- Donner des étapes claires
+RÈGLES D'ANALYSE AUDIO :
+1. Si un seul fichier audio est fourni (CIBLE) : Analyse le spectre, le timbre, les effets et explique comment le refaire.
+2. Si DEUX fichiers sont fournis (CIBLE + ESSAI) : Compare les deux. Dis à l'utilisateur ce qu'il doit changer dans ses réglages (ADSR, Filtre, EQ) pour que son ESSAI ressemble à la CIBLE.
 
 CONNAISSANCES : Synthèse (soustractive, FM, wavetable), Machines (Elektron, MPC, SP-404, OP-1), Signal (filtres, ADSR, LFO), Effets (reverb, delay, distortion)
 
 ÉTHIQUE : Outil éducatif. Apprendre les techniques, pas copier des presets.
-
-Prêt à aider !"""
+"""
 
 # --- 5. INTERFACE ---
 
@@ -277,7 +268,7 @@ with st.sidebar:
     st.markdown("---")
     
     # 2. FICHIERS (tout regroupé)
-    st.markdown("### 2. 📁 Fichiers" if lang == "Français 🇫🇷" else "### 2. 📁 Files")
+    st.markdown(f"### {T['doc_section']}")
     
     # Helper pour trouver les manuels
     with st.expander(T["doc_help"]):
@@ -304,14 +295,16 @@ with st.sidebar:
     if uploaded_pdf:
         st.success(T["manual_loaded"])
     
-    # Upload 2 : Son à analyser
-    st.caption("🎵 Son à analyser" if lang == "Français 🇫🇷" else "🎵 Sound to analyze")
+    # Upload 2 : Son à analyser (CIBLE)
+    st.caption(T["audio_title"])
     uploaded_audio = st.file_uploader(
         "Audio", 
         type=["mp3", "wav", "m4a"], 
         label_visibility="collapsed",
         key="audio_upload"
     )
+    
+    # Gestion Audio Cible (Sécurisée)
     if uploaded_audio:
         if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
             suffix = f".{uploaded_audio.name.split('.')[-1]}"
@@ -323,17 +316,34 @@ with st.sidebar:
     
     if "current_audio_path" in st.session_state:
         st.success(f"✅ {st.session_state.get('current_audio_name', 'Fichier Audio')}")
-        
-        # CORRECTION : On lit les bytes directement pour éviter l'erreur MediaFileStorage
         try:
             with open(st.session_state.current_audio_path, "rb") as audio_file:
-                audio_bytes = audio_file.read()
-            st.audio(audio_bytes)
+                st.audio(audio_file.read())
         except FileNotFoundError:
-            st.warning("⚠️ Le fichier audio a expiré. Merci de le recharger.")
-            # Nettoyage préventif
-            del st.session_state.current_audio_path
-            st.rerun()
+            st.warning("⚠️ Fichier expiré.")
+
+    # --- NOUVEAU : MODE COACH ---
+    st.markdown("---")
+    st.markdown(f"### {T['coach_section']}")
+    st.caption(T['coach_desc'])
+    
+    uploaded_try = st.file_uploader(
+        T['coach_label'], 
+        type=["mp3", "wav", "m4a"], 
+        key="try_upload"
+    )
+    
+    # Gestion Audio Essai (Sécurisée)
+    if uploaded_try:
+        if "current_try_name" not in st.session_state or st.session_state.get("current_try_name") != uploaded_try.name:
+             with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as t:
+                t.write(uploaded_try.getvalue())
+                st.session_state.try_path = t.name
+                st.session_state.current_try_name = uploaded_try.name
+             st.success("✅ Essai prêt")
+    # ----------------------------
+
+    st.markdown("---")
     
     # Upload 3 : Session précédente
     with st.expander("💾 " + ("Reprendre une session" if lang == "Français 🇫🇷" else "Resume session")):
@@ -357,34 +367,21 @@ with st.sidebar:
 
     st.markdown("---")
     
-    # FOOTER : ACTIONS (seulement si une conversation existe)
+    # FOOTER : ACTIONS
     if "chat_history" in st.session_state and st.session_state.chat_history:
         history_txt = format_history(st.session_state.chat_history)
-        
         col_dl, col_reset = st.columns(2)
-        
         with col_dl:
             st.download_button(
-                "💾",
-                history_txt, 
+                "💾", history_txt, 
                 f"groovebox_session_{datetime.now().strftime('%Y%m%d_%H%M')}.txt", 
-                "text/plain", 
-                use_container_width=True,
-                type="primary",
-                help=T["memory_save"]
+                "text/plain", use_container_width=True, type="primary"
             )
-        
         with col_reset:
-            if st.button(
-                "🔄",
-                use_container_width=True,
-                type="secondary",
-                help=T["reset"]
-            ):
+            if st.button("🔄", use_container_width=True, type="secondary"):
                 st.session_state.clear()
                 st.rerun()
     
-    # Footer philosophie (toujours visible)
     with st.expander(T["about"]):
         st.markdown(T["about_text"])
         st.markdown(f"[{T['support']}](https://www.buymeacoffee.com/)")
@@ -393,7 +390,7 @@ with st.sidebar:
 st.title(T["title"])
 st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;'>{T['subtitle']}</h3>", unsafe_allow_html=True)
 
-# --- LOGIC V2.0 (INTEGRALE) ---
+# --- LOGIC V2.0 (GEMINI FLASH 2.0 + COACH) ---
 if api_key:
     genai.configure(api_key=api_key)
     
@@ -414,9 +411,9 @@ if api_key:
     # 2. GESTION DE L'AUDIO PRINCIPAL (Cible)
     if "current_audio_path" in st.session_state:
         if "audio_ref" not in st.session_state or st.session_state.get("last_uploaded_audio") != st.session_state.current_audio_name:
-             with st.status("Analyse du son cible...", expanded=False) as status:
+             with st.status("Analyse du son cible (Upload)...", expanded=False) as status:
                 try:
-                    # Upload vers Gemini
+                    # Upload vers Gemini (Crucial pour qu'il entende)
                     audio_file_ref = genai.upload_file(path=st.session_state.current_audio_path)
                     
                     # Attente processing
@@ -430,33 +427,22 @@ if api_key:
                 except Exception as e:
                     st.error(f"Erreur upload audio : {e}")
 
-    # 3. FEATURE COACH : UPLOAD DE L'ESSAI (Dans la Sidebar)
-    with st.sidebar:
-        st.markdown("---")
-        st.markdown("### 🧪 Mode Coach")
-        uploaded_try = st.file_uploader("Charge ton essai (Comparaison)", type=["mp3", "wav", "m4a"], key="try_upload")
-        
-        if uploaded_try:
-             # Sauvegarde locale temporaire
-             if "current_try_name" not in st.session_state or st.session_state.get("current_try_name") != uploaded_try.name:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as t:
-                    t.write(uploaded_try.getvalue())
-                    st.session_state.try_path = t.name
-                    st.session_state.current_try_name = uploaded_try.name
-                
-                # Upload vers Gemini (Immédiat)
-                with st.spinner("L'IA écoute ton essai..."):
-                    try:
-                        tr_ref = genai.upload_file(path=st.session_state.try_path)
-                        while tr_ref.state.name == "PROCESSING":
-                            time.sleep(0.5)
-                            tr_ref = genai.get_file(tr_ref.name)
-                        st.session_state.try_ref = tr_ref
-                        st.success("✅ Essai reçu !")
-                    except Exception as e: 
-                        st.error(f"Erreur : {e}")
+    # 3. GESTION DE L'AUDIO ESSAI (Mode Coach)
+    if "try_path" in st.session_state:
+        if "try_ref" not in st.session_state or st.session_state.get("last_uploaded_try") != st.session_state.current_try_name:
+             with st.spinner("L'IA écoute votre essai..."):
+                try:
+                    tr_ref = genai.upload_file(path=st.session_state.try_path)
+                    while tr_ref.state.name == "PROCESSING":
+                        time.sleep(0.5)
+                        tr_ref = genai.get_file(tr_ref.name)
+                    st.session_state.try_ref = tr_ref
+                    st.session_state.last_uploaded_try = st.session_state.current_try_name
+                    st.toast("✅ Essai reçu ! Prêt à comparer.")
+                except Exception as e: 
+                    st.error(f"Erreur upload essai : {e}")
 
-    # 4. AFFICHAGE HISTORIQUE CHAT
+    # 4. CHAT ET INPUT
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     
@@ -464,7 +450,6 @@ if api_key:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
-    # 5. INPUT USER
     prompt = None
     if not st.session_state.chat_history:
         col1, col2, col3 = st.columns(3)
@@ -476,17 +461,16 @@ if api_key:
     if user_input:
         prompt = user_input
 
-    # 6. GÉNÉRATION INTELLIGENTE (GEMINI 2.0)
+    # 5. GÉNÉRATION AVEC GEMINI 2.0 FLASH
     if prompt:
         with st.chat_message("user"):
             st.markdown(prompt)
         st.session_state.chat_history.append({"role": "user", "content": prompt})
         
-        # Outils (Recherche Google optionnelle)
+        # Outils
         tools = None 
         # tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
-
-        # Contexte Mémoire
+        
         memory_context = ""
         if "memory_content" in st.session_state:
             memory_context = f"## CONTEXTE MEMOIRE\n{st.session_state.memory_content}\n"
@@ -499,15 +483,15 @@ if api_key:
             has_manual="pdf_ref" in st.session_state
         )
         
-        # --- MODÈLE : GEMINI 2.0 FLASH (Le Futur) ---
+        # --- MOTEUR GEMINI 2.0 FLASH ---
         target_model = "gemini-2.0-flash-exp"
         try:
             model = genai.GenerativeModel(target_model, system_instruction=sys_prompt, tools=tools)
         except:
-            # Fallback si jamais le modèle expérimental disparaît
+            # Sécurité
             model = genai.GenerativeModel("gemini-1.5-pro", system_instruction=sys_prompt)
 
-        # Construction de la requête Multimodale
+        # Construction de la requête
         req = []
         
         # A. Manuel
@@ -520,12 +504,11 @@ if api_key:
             req.append(st.session_state.audio_ref)
             req.append("SON CIBLE (Reference Audio). Analyse ce son.")
             
-        # C. Audio Essai (L'élève) - MODE COACH
+        # C. Audio Essai (Mode Coach)
         if "try_ref" in st.session_state:
             req.append(st.session_state.try_ref)
             req.append("SON ESSAI (User Attempt). C'est ce que j'ai produit.")
-            # On ajoute une instruction spéciale au prompt
-            prompt += "\n\n[INSTRUCTION COACH] : Compare mon ESSAI avec la CIBLE. Sois précis : quelles fréquences ou paramètres (ADSR, Filtre, FX) dois-je ajuster pour que mon essai ressemble parfaitement à la cible ?"
+            prompt += "\n\n⚠️ [INSTRUCTION COACH] : Compare mon ESSAI avec la CIBLE. Dis ce qui manque (Filtre ? Enveloppe ? Effet ?) pour que l'essai sonne comme la cible."
 
         # D. La Question
         req.append(prompt)
@@ -536,7 +519,6 @@ if api_key:
                     resp = model.generate_content(req)
                     text_resp = resp.text
                     
-                    # Indicateur visuel du moteur utilisé
                     if "2.0" in target_model:
                         st.caption(f"⚡ Propulsé par {target_model}")
                         
