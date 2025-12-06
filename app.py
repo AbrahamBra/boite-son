@@ -10,7 +10,7 @@ from datetime import datetime
 # --- 1. CONFIGURATION INITIALE ---
 st.set_page_config(
     page_title="Groovebox Tutor",
-    page_icon="logo.png", # Juste le Favicon (onglet navigateur)
+    page_icon="logo.png",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -44,13 +44,15 @@ def apply_theme(theme_name):
         div[data-testid="stFileUploader"] {{border: 1px dashed {t['primary']}; background-color: rgba(0,0,0,0.2); border-radius: 10px;}}
         #MainMenu {{visibility: hidden;}} footer {{visibility: hidden;}} header {{visibility: hidden;}}
         .block-container {{padding-top: 2rem; padding-bottom: 2rem;}}
+        /* Info Box Styling */
+        div[data-testid="stAlert"] {{background-color: rgba(255,255,255,0.05); border: 1px solid {t['primary']}; color: white;}}
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
 
 apply_theme(st.session_state.current_theme)
 
-# --- 3. DICTIONNAIRE MULTILINGUE COMPLET (7 LANGUES) ---
+# --- 3. DICTIONNAIRE MULTILINGUE (AVEC EXPLICATIONS "HOW TO") ---
 TR = {
     "Français 🇫🇷": {
         "settings": "Réglages",
@@ -65,6 +67,7 @@ TR = {
         "buy_coffee": "☕ Offrir un café",
         "title": "Groovebox Tutor AI",
         "caption": "Décrypte le son. Maîtrise ta machine. Crée ton propre grain.",
+        "how_to": "👋 **Bienvenue !**\n1. Charge le **Manuel PDF** de ta machine (menu à gauche).\n2. Glisse un **Fichier Audio** ci-dessous.\n3. L'IA écoute le son, lit le manuel, et t'explique **quels boutons tourner** pour obtenir ce résultat.",
         "audio_title": "🎧 Source Audio",
         "audio_desc": "Importe un fichier audio (MP3, WAV, M4A) pour l'analyser.",
         "drop_label": "Glisse ton fichier ici",
@@ -95,6 +98,7 @@ TR = {
         "buy_coffee": "☕ Buy a coffee",
         "title": "Groovebox Tutor AI",
         "caption": "Decode the sound. Master your machine. Craft your tone.",
+        "how_to": "👋 **Welcome!**\n1. Upload your machine's **PDF Manual** (sidebar).\n2. Drop an **Audio File** below.\n3. The AI listens to the sound, reads the manual, and tells you **exactly which knobs to turn** to recreate it.",
         "audio_title": "🎧 Audio Source",
         "audio_desc": "Upload an audio file (MP3, WAV, M4A) to analyze.",
         "drop_label": "Drop your file here",
@@ -125,6 +129,7 @@ TR = {
         "buy_coffee": "☕ Invítame un café",
         "title": "Groovebox Tutor AI",
         "caption": "Decodifica el sonido. Domina tu máquina. Crea tu propio tono.",
+        "how_to": "👋 **¡Bienvenido!**\n1. Sube el **Manual PDF** de tu máquina (barra lateral).\n2. Arrastra un **Archivo de Audio** abajo.\n3. La IA escucha el sonido, lee el manual y te dice **qué botones tocar**.",
         "audio_title": "🎧 Fuente de Audio",
         "audio_desc": "Sube un archivo de audio (MP3, WAV, M4A) para analizar.",
         "drop_label": "Arrastra tu archivo aquí",
@@ -155,6 +160,7 @@ TR = {
         "buy_coffee": "☕ Spendier mir einen Kaffee",
         "title": "Groovebox Tutor AI",
         "caption": "Entschlüssle den Sound. Beherrsche deine Maschine.",
+        "how_to": "👋 **Willkommen!**\n1. Lade das **PDF-Handbuch** (links).\n2. Lade eine **Audiodatei** hoch (unten).\n3. Die KI hört den Sound, liest das Handbuch und erklärt dir **genau, welche Knöpfe du drehen musst**.",
         "audio_title": "🎧 Audioquelle",
         "audio_desc": "Lade eine Audiodatei (MP3, WAV, M4A) zur Analyse hoch.",
         "drop_label": "Datei hier ablegen",
@@ -185,6 +191,7 @@ TR = {
         "buy_coffee": "☕ Offrimi un caffè",
         "title": "Groovebox Tutor AI",
         "caption": "Decodifica il suono. Padroneggia la macchina.",
+        "how_to": "👋 **Benvenuto!**\n1. Carica il **Manuale PDF** (a sinistra).\n2. Trascina un **File Audio** qui sotto.\n3. L'IA ascolta il suono, legge il manuale e ti spiega **quali pulsanti usare**.",
         "audio_title": "🎧 Sorgente Audio",
         "audio_desc": "Carica un file audio (MP3, WAV) per analizzarlo.",
         "drop_label": "Trascina qui il file",
@@ -215,6 +222,7 @@ TR = {
         "buy_coffee": "☕ Me paga um café",
         "title": "Groovebox Tutor AI",
         "caption": "Decodifique o som. Domine sua máquina.",
+        "how_to": "👋 **Bem-vindo!**\n1. Envie o **Manual PDF** (à esquerda).\n2. Arraste um **Arquivo de Áudio** abaixo.\n3. A IA escuta o som, lê o manual e explica **quais botões usar**.",
         "audio_title": "🎧 Fonte de Áudio",
         "audio_desc": "Envie um arquivo de áudio (MP3, WAV) para análise.",
         "drop_label": "Arraste seu arquivo aqui",
@@ -245,6 +253,7 @@ TR = {
         "buy_coffee": "☕ コーヒーを奢る",
         "title": "Groovebox Tutor AI",
         "caption": "音を解読し、マシンをマスターしよう。",
+        "how_to": "👋 **ようこそ！**\n1. 左のメニューから**PDFマニュアル**をアップロード。\n2. 下に**オーディオファイル**をドロップ。\n3. AIが音を聴き、マニュアルを読み、**どのノブを回せばいいか**を教えます。",
         "audio_title": "🎧 音源",
         "audio_desc": "分析するオーディオファイル(MP3, WAV)をアップロード。",
         "drop_label": "ここにファイルをドロップ",
@@ -295,8 +304,6 @@ with st.sidebar:
     lang = st.selectbox("Language / Langue 🌍", list(TR.keys()), index=0)
     T = TR.get(lang, TR["Français 🇫🇷"]) 
     
-    # PLUS DE LOGO ICI (SUPPRIMÉ)
-    
     st.title(T["settings"])
     api_key = st.text_input("API Key", type="password")
     with st.expander(T["api_help"]):
@@ -313,13 +320,11 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(f"### {T['memory_label']}")
     
-    # Upload (Charger un passif)
     uploaded_memory = st.file_uploader(T["memory_upload"], type=["txt"], key="mem_up")
     if uploaded_memory:
         st.session_state.memory_content = uploaded_memory.getvalue().decode("utf-8")
         st.success(T["memory_loaded"])
     
-    # Download (Sauvegarder l'actif)
     if "chat_history" in st.session_state and st.session_state.chat_history:
         history_txt = format_history_for_download(st.session_state.chat_history)
         st.download_button(
@@ -357,6 +362,9 @@ with st.sidebar:
 st.title(f"🎹 {T['title']}")
 st.caption(T["caption"])
 
+# --- EXPLICATION RAPIDE (HOW TO) ---
+st.info(T["how_to"])
+
 # --- AUDIO ZONE ---
 with st.container(border=True):
     st.subheader(T["audio_title"])
@@ -364,6 +372,10 @@ with st.container(border=True):
     
     uploaded_audio = st.file_uploader(T["drop_label"], type=["mp3", "wav", "m4a"], label_visibility="collapsed")
     
+    # DISCLAIMER LEGAL
+    if not uploaded_audio:
+        st.caption("⚠️ *Usage strictement personnel et pédagogique. Respectez le droit d'auteur.*")
+
     if uploaded_audio:
         if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
             suffix = f".{uploaded_audio.name.split('.')[-1]}"
