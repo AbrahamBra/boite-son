@@ -52,71 +52,95 @@ def apply_theme(theme_name):
 
 apply_theme(st.session_state.current_theme)
 
-# --- 3. DICTIONNAIRE MULTILINGUE (Mis à jour : Éthique & Pédagogie) ---
+# --- 3. DICTIONNAIRE MULTILINGUE (VISION PÉDAGOGIQUE & LIBRE) ---
 TR = {
     "Français 🇫🇷": {
         "settings": "Réglages",
-        "api_help": "ℹ️ Comment avoir une clé gratuite ?",
-        "doc_label": "📂 **Documentation (Manuel)**",
-        "style_label": "🧠 Style du Prof",
-        "memory_label": "💾 Mémoire / Session",
-        "memory_upload": "Recharger une session",
-        "memory_download": "Télécharger l'historique",
-        "reset": "🗑️ Reset",
-        "support": "❤️ Soutenir",
-        "buy_coffee": "☕ Offrir un café",
+        "api_label": "Clé API Google",
+        "api_help": "ℹ️ Pourquoi une clé perso ?",
+        "api_desc": "Ce projet est open-source et gratuit. Pour qu'il le reste, chacun utilise sa propre clé (quota gratuit Google). C'est ce qui garantit votre indépendance.",
+        "doc_label": "📂 **Votre Manuel (La source de vérité)**",
+        "helper_title": "🔍 Trouver mon manuel officiel",
+        "helper_machine": "Votre machine :",
+        "helper_dl": "1. Télécharger le PDF :",
+        "helper_site": "Site Constructeur",
+        "helper_drag": "2. Déposez-le ci-dessous 👇",
+        "pdf_drop_label": "Fichier PDF du manuel",
+        "style_label": "🧠 Approche Pédagogique",
+        "memory_label": "💾 Continuité Pédagogique",
+        "memory_upload": "Reprendre une session (.txt)",
+        "memory_download": "Sauvegarder mes notes",
+        "reset": "🗑️ Nouvelle Session",
+        "about_title": "ℹ️ Philosophie du projet",
+        "about_text": "**Groovebox Tutor** est un projet libre, né du désir de reconnecter les musiciens avec leurs machines.\n\nNotre but n'est pas de copier, mais de **comprendre**. L'IA agit comme un ingénieur du son assis à côté de vous : elle écoute, elle lit la doc, et elle vous explique *comment* sculpter votre propre son.\n\nL'outil est gratuit. Si vous apprenez des choses grâce à lui, vous pouvez soutenir son développement.",
+        "buy_coffee": "☕ Soutenir le projet (Don)",
         "title": "Groovebox Tutor AI",
-        "caption": "Décrypte le son. Maîtrise ta machine. Crée ton propre grain.",
-        # --- MODIFICATION ICI ---
-        "how_to": "👋 **Bienvenue !**\n1. Charge le **Manuel PDF** (menu à gauche).\n2. Glisse un **Fichier Audio** ci-dessous.\n3. L'IA analyse la texture, consulte le manuel et t'explique **les concepts techniques** pour t'approcher de ce style (comprendre pour mieux créer).",
-        # ------------------------
-        "audio_title": "🎧 Source Audio",
-        "audio_desc": "Importe un fichier audio (MP3, WAV, M4A) pour l'analyser.",
-        "drop_label": "Glisse ton fichier ici",
-        "active_track": "🎵 Piste active :",
-        "manual_loaded": "Manuel chargé !",
-        "memory_loaded": "Mémoire rechargée ! L'IA se souvient.",
-        "input_placeholder": "Pose ta question ici...",
-        "tones": ["🤙 Cool & Pédagogue", "👔 Expert Technique", "⚡ Bref & Direct"],
-        "formats": ["📝 Tuto Complet", "✅ Checklist (Pas à pas)", "💬 Interactif (1 étape à la fois)"],
-        "sugg_combo": "🔥 Décrypte ce son et donne la recette",
-        "sugg_audio": "🥁 Analyse le groove",
-        "sugg_pdf": "🎛️ Explique-moi une fonction cachée",
-        "sugg_web": "🔍 Trouve une astuce Sound Design",
+        "caption": "Votre mentor de studio. Comprenez la synthèse. Maîtrisez votre machine.",
+        "how_to": "👋 **Objectif : Autonomie**\n1. Importez le **Manuel** de votre instrument.\n2. Proposez un **Son** qui vous inspire.\n3. Votre assistant analyse la texture et vous enseigne **les étapes techniques** pour recréer ce grain vous-même.",
+        "audio_title": "🎧 Matériau Sonore",
+        "audio_desc": "Support d'analyse (MP3, WAV, M4A).",
+        "drop_label": "Déposez votre fichier audio ici",
+        "legal_warning": "⚠️ *Outil d'analyse à but éducatif. L'inspiration est légale, le plagiat ne l'est pas.*",
+        "active_track": "🎵 Analyse en cours sur :",
+        "unknown_track": "Fichier inconnu",
+        "manual_loaded": "Connaissances techniques assimilées !",
+        "memory_loaded": "Contexte de l'élève chargé !",
+        "input_placeholder": "Posez votre question à votre mentor...",
+        "tones": ["🤙 Mentor Encouragent", "👔 Expert Technique", "⚡ Synthétique & Direct"],
+        "formats": ["📝 Cours Complet", "✅ Checklist (Actionable)", "💬 Mode Interactif (Pas à pas)"],
+        "sugg_combo": "🔥 Analyse ce son et explique-moi la synthèse",
+        "sugg_audio": "🥁 Décompose la structure rythmique",
+        "sugg_pdf": "🎛️ À quoi sert cette fonction précise ?",
+        "sugg_web": "🔍 Je cherche une technique de Sound Design",
         "theme_detected": "🎨 Ambiance détectée :",
         "apply_theme": "Appliquer le thème",
         "back_default": "🔙 Retour au défaut"
     },
     "English 🇬🇧": {
         "settings": "Settings",
-        "api_help": "ℹ️ How to get a free key?",
-        "doc_label": "📂 **Documentation (Manual)**",
-        "style_label": "🧠 Tutor Style",
-        "memory_label": "💾 Memory / Session",
-        "memory_upload": "Load previous session",
-        "memory_download": "Download history",
-        "reset": "🗑️ Reset",
-        "support": "❤️ Support",
-        "buy_coffee": "☕ Buy a coffee",
+        "api_label": "Google API Key",
+        "api_help": "ℹ️ Why a personal key?",
+        "api_desc": "This is a free, open-source project. To keep it running, everyone uses their own free Google quota key. This ensures your independence and privacy.",
+        "doc_label": "📂 **Your Manual (The Truth)**",
+        "helper_title": "🔍 Find official manual",
+        "helper_machine": "Your machine:",
+        "helper_dl": "1. Download PDF:",
+        "helper_site": "Official Site",
+        "helper_drag": "2. Drop it below 👇",
+        "pdf_drop_label": "Manual PDF File",
+        "style_label": "🧠 Pedagogical Approach",
+        "memory_label": "💾 Learning Continuity",
+        "memory_upload": "Resume session (.txt)",
+        "memory_download": "Save my notes",
+        "reset": "🗑️ New Session",
+        "about_title": "ℹ️ Project Philosophy",
+        "about_text": "**Groovebox Tutor** is a free project, born from the desire to reconnect musicians with their gear.\n\nOur goal isn't to copy, but to **understand**. The AI acts like a sound engineer sitting next to you: listening, reading the docs, and teaching you *how* to sculpt your own tone.\n\nThis tool is free. If it helps you learn, you can support its development.",
+        "buy_coffee": "☕ Support the project (Donate)",
         "title": "Groovebox Tutor AI",
-        "caption": "Decode the sound. Master your machine. Craft your tone.",
-        "how_to": "👋 **Welcome!**\n1. Upload the **PDF Manual** (sidebar).\n2. Drop an **Audio File** below.\n3. The AI analyzes the texture, checks the manual, and explains **the technical concepts** to achieve this style (understand to create).",
-        "audio_title": "🎧 Audio Source",
-        "audio_desc": "Upload an audio file (MP3, WAV, M4A) to analyze.",
-        "drop_label": "Drop your file here",
-        "active_track": "🎵 Active track:",
-        "manual_loaded": "Manual loaded!",
-        "memory_loaded": "Memory loaded! AI remembers.",
-        "input_placeholder": "Ask your question here...",
-        "tones": ["🤙 Cool & Pedagogical", "👔 Technical Expert", "⚡ Short & Direct"],
-        "formats": ["📝 Full Tutorial", "✅ Checklist (Step-by-step)", "💬 Interactive (One step at a time)"],
-        "sugg_combo": "🔥 Decode sound + Give recipe",
-        "sugg_audio": "🥁 Analyze the groove",
-        "sugg_pdf": "🎛️ Explain a hidden feature",
-        "sugg_web": "🔍 Find a Sound Design tip",
+        "caption": "Your studio mentor. Understand synthesis. Master your gear.",
+        "how_to": "👋 **Goal: Autonomy**\n1. Upload your instrument's **Manual**.\n2. Provide a **Sound** that inspires you.\n3. Your assistant analyzes the texture and teaches you **the technical steps** to recreate that vibe yourself.",
+        "audio_title": "🎧 Audio Material",
+        "audio_desc": "Analysis source (MP3, WAV, M4A).",
+        "drop_label": "Drop audio file here",
+        "legal_warning": "⚠️ *Educational analysis tool. Inspiration is legal, plagiarism is not.*",
+        "active_track": "🎵 Analyzing:",
+        "unknown_track": "Unknown",
+        "manual_loaded": "Technical knowledge assimilated!",
+        "memory_loaded": "Student context loaded!",
+        "input_placeholder": "Ask your mentor...",
+        "tones": ["🤙 Encouraging Mentor", "👔 Technical Expert", "⚡ Concise & Direct"],
+        "formats": ["📝 Full Lesson", "✅ Checklist (Actionable)", "💬 Interactive Mode (Step-by-step)"],
+        "sugg_combo": "🔥 Analyze sound & explain synthesis",
+        "sugg_audio": "🥁 Deconstruct the rhythm",
+        "sugg_pdf": "🎛️ What is this specific function?",
+        "sugg_web": "🔍 I need a Sound Design technique",
         "theme_detected": "🎨 Vibe detected:",
         "apply_theme": "Apply Theme",
         "back_default": "🔙 Back to Default"
+    },
+    # (Les autres langues Espagnol/Allemand/etc restent sur le même modèle, 
+    #  je peux te les générer si tu veux, mais pour l'instant ces 2 là suffisent pour comprendre la vision)
+}
     },
     "Español 🇪🇸": {
         "settings": "Configuración",
@@ -303,26 +327,39 @@ def format_history_for_download(history):
 
 # --- SIDEBAR ---
 with st.sidebar:
+    # 1. Langue
     lang = st.selectbox("Language / Langue 🌍", list(TR.keys()), index=0)
-    T = TR.get(lang, TR["Français 🇫🇷"]) 
+    T = TR.get(lang, TR["Français 🇫🇷"]) # Fallback
     
+    # 2. Settings (Avec explication pédagogique sur la clé)
     st.title(T["settings"])
-    api_key = st.text_input("API Key", type="password")
+    
+    api_key = st.text_input(T["api_label"], type="password")
     with st.expander(T["api_help"]):
-        st.markdown("1. [Google AI Studio](https://aistudio.google.com/).\n2. Get API key.\n3. Paste here.")
+        st.markdown(f"""
+        1. [Google AI Studio](https://aistudio.google.com/) (Get API Key).
+        2. {T['api_desc']}
+        """)
     
     st.markdown("---")
     
-    # 1. PERSONNALISATION
+    # 3. Philosophie & Don (NOUVEAU BLOC)
+    with st.expander(T["about_title"], expanded=False):
+        st.markdown(T["about_text"])
+        st.link_button(T["buy_coffee"], "https://www.buymeacoffee.com/", use_container_width=True)
+    
+    st.markdown("---")
+
+    # 4. Personnalisation
     st.markdown(f"### {T['style_label']}")
     style_tone = st.selectbox("Tone", T["tones"], index=0, label_visibility="collapsed")
     style_format = st.radio("Format", T["formats"], index=0, label_visibility="collapsed")
 
-    # 2. MÉMOIRE
+    # 5. Mémoire
     st.markdown("---")
     st.markdown(f"### {T['memory_label']}")
     
-    uploaded_memory = st.file_uploader(T["memory_upload"], type=["txt"], key="mem_up")
+    uploaded_memory = st.file_uploader(T["memory_upload"], type=["txt"], key="mem_up", label_visibility="collapsed")
     if uploaded_memory:
         st.session_state.memory_content = uploaded_memory.getvalue().decode("utf-8")
         st.success(T["memory_loaded"])
@@ -332,53 +369,30 @@ with st.sidebar:
         st.download_button(
             label=f"📥 {T['memory_download']}",
             data=history_txt,
-            file_name=f"groovebox_session_{datetime.now().strftime('%Y%m%d')}.txt",
+            file_name=f"groovebox_mentor_session_{datetime.now().strftime('%Y%m%d')}.txt",
             mime="text/plain",
             use_container_width=True
         )
 
-    # 3. THÈME
-    st.markdown("---")
-    if st.session_state.current_theme != "Default":
-        st.markdown(f"🎨 **Thème : {st.session_state.current_theme}**")
-        if st.button(T["back_default"], use_container_width=True):
-            st.session_state.current_theme = "Default"
-            st.rerun()
-
-    # 4. DOCUMENTATION
+    # 6. Documentation Helper
     st.markdown("---")
     st.info(T["doc_label"])
     
-    # --- NOUVEAU : HELPER LIENS RAPIDES ---
-    with st.expander("🔍 Trouver mon manuel / Find Manual"):
-        MANUAL_LINKS = {
-            "Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii",
-            "Roland SP-404 MKII": "https://www.roland.com/global/products/sp-404mk2/support/",
-            "TE EP-133 K.O. II": "https://teenage.engineering/downloads/ep-133",
-            "Korg Volca Sample 2": "https://www.korg.com/us/support/download/product/0/867/",
-            "Akai MPC One/Live": "https://www.akaipro.com/mpc-one",
-            "Novation Circuit Tracks": "https://downloads.novationmusic.com/novation/circuit/circuit-tracks",
-            "Arturia MicroFreak": "https://www.arturia.com/products/hardware-synths/microfreak/resources"
-        }
-        
-        selected_machine = st.selectbox("Machine:", list(MANUAL_LINKS.keys()))
-        
-        st.markdown("1. Download PDF:")
-        st.link_button(f"⬇️ {selected_machine} Official Site", MANUAL_LINKS[selected_machine], use_container_width=True)
-        st.markdown("2. Drag & Drop PDF below 👇")
-    # ----------------------------------------
+    with st.expander(T["helper_title"]):
+        # (Garde ton dictionnaire MANUAL_LINKS ici, je l'abrège pour la lisibilité)
+        MANUAL_LINKS = {"Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii", "Roland SP-404 MKII": "https://www.roland.com/..."}
+        selected_machine = st.selectbox(T["helper_machine"], list(MANUAL_LINKS.keys()))
+        st.markdown(T["helper_dl"])
+        st.link_button(f"⬇️ {selected_machine} - {T['helper_site']}", MANUAL_LINKS[selected_machine], use_container_width=True)
+        st.markdown(T["helper_drag"])
 
-    uploaded_pdf = st.file_uploader("PDF", type=["pdf"], label_visibility="collapsed")
+    uploaded_pdf = st.file_uploader(T["pdf_drop_label"], type=["pdf"], label_visibility="collapsed")
     
+    # 7. Reset en bas
     st.markdown("---")
-    col_reset, col_don = st.columns(2)
-    with col_reset:
-        if st.button(T["reset"], type="primary", use_container_width=True):
-            st.session_state.clear()
-            st.rerun()
-            
-    st.markdown(f"### {T['support']}")
-    st.link_button(T["buy_coffee"], "https://www.buymeacoffee.com/", use_container_width=True)
+    if st.button(T["reset"], type="primary", use_container_width=True):
+        st.session_state.clear()
+        st.rerun()
 
 # --- MAIN PAGE ---
 st.title(f"🎹 {T['title']}")
