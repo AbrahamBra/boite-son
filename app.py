@@ -10,13 +10,13 @@ from PIL import Image
 
 # --- 1. CONFIGURATION ---
 st.set_page_config(
-    page_title="Groovebox Tutor Pro",
+    page_title="Groovebox Tutor",
     page_icon="🎹",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS PREMIUM (INTÉGRAL & PRESERVÉ) ---
+# --- 2. CSS PREMIUM (DESIGN COMPLET) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
@@ -49,7 +49,7 @@ st.markdown("""
     }
     
     /* Chat Messages */
-    .stChatMessage { background-color: rgba(255, 255, 255, 0.02); border: 1px solid #222; border-radius: 10px; }
+    .stChatMessage { background-color: rgba(255, 255, 255, 0.02); border: 1px solid #333; border-radius: 12px; margin-bottom: 10px; }
     
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     .block-container {padding-top: 3rem; padding-bottom: 5rem;}
@@ -61,47 +61,59 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. DICTIONNAIRE COMPLET (TEXTES RICHES) ---
+# --- 3. DICTIONNAIRE COMPLET (AVEC TEXTES RICHES & CORRECTIONS) ---
 TR = {
     "Français 🇫🇷": {
-        "title": "Groovebox Tutor",
-        "subtitle": "Ton binôme pédagogique. On décortique, tu apprends.",
-        "settings": "Configuration", 
-        "api_label": "Clé API Google", 
-        "doc_section": "2. Votre Machine", 
-        "doc_help": "Manuels",
-        "manual_upload": "Manuel PDF", 
-        "manual_loaded": "Manuel OK",
-        "audio_title": "🎧 Audio Cible",
-        "coach_section": "🧪 Mode Coach", 
-        "coach_desc": "Upload ton essai", 
-        "coach_label": "Mon Essai",
-        "vision_section": "👁️ Vision", 
-        "vision_desc": "Photo réglages", 
-        "vision_toggle": "Caméra",
-        "style_section": "Style", 
-        "memory_load": "Sauvegarde", 
-        "placeholder": "Pose une question...",
-        "analyzing": "Analyse...",
-        "sugg_1": "Analyse ce son",
-        "sugg_2": "Structure rythmique",
-        "sugg_3": "Fonction cachée"
+        "settings": "1. Configuration",
+        "api_label": "Clé API Google",
+        "api_help": "ℹ️ Pourquoi une clé perso ?",
+        "api_desc": "Projet open-source. L'usage de votre propre clé gratuite garantit votre indépendance et la gratuité totale de l'outil.",
+        "doc_section": "2. Votre Machine",
+        "doc_help": "🔍 Trouver mon manuel officiel",
+        "manual_upload": "Déposer le Manuel PDF ici",
+        "audio_title": "🎧 Le Son à Analyser",
+        "audio_subtitle": "C'est ici que la magie opère. Glissez un fichier pour lancer l'écoute.",
+        "audio_label": "Fichier Audio",
+        # --- AJOUTS V5 ---
+        "coach_section": "🧪 Mode Coach (Comparaison)",
+        "coach_desc": "Charge ton propre essai ici. L'IA comparera ton son avec la cible.",
+        "coach_label": "Mon Essai (mp3/wav)",
+        "vision_section": "👁️ Vision Debug",
+        "vision_desc": "Montre tes réglages (Photo)",
+        "vision_toggle": "Activer Caméra / Upload",
+        # -----------------
+        "style_section": "3. Style Pédagogique",
+        "memory_title": "4. 💾 Session & Mémoire",
+        "memory_help": "💡 Comment ça marche ?",
+        "memory_desc": "**Sauvegarder votre progression :**\n\n1. En fin de session, cliquez sur **💾 Télécharger** en bas\n2. Un fichier .txt sera téléchargé avec tout l'historique\n3. La prochaine fois, glissez ce fichier ici pour reprendre\n\nL'IA se souviendra de tout le contexte !",
+        "memory_load": "📂 Reprendre une session précédente",
+        "memory_save": "💾 Télécharger Session",
+        "reset": "🔄 Nouvelle Session",
         "about": "📖 Philosophie du projet",
         "about_text": """**Groovebox Tutor** est né d'une frustration : celle de voir des musiciens acheter des machines incroyables... pour finalement copier des presets trouvés sur Reddit.
 
 ### Notre vision
-Nous croyons que **comprendre** vaut mieux que **copier**.
-L'IA n'est pas un chatbot passif. C'est un **Coach Proactif** qui :
-- 👂 Écoute dès que vous chargez un son.
-- 📊 Vous donne la recette technique précise.
-- 🏆 Vous note sur vos essais.
 
-*Fait avec ❤️ pour les beatmakers.*""",
+Nous croyons que **comprendre** vaut mieux que **copier**. Que la vraie créativité vient de la maîtrise technique. Que chaque machine mérite qu'on apprenne à lui parler.
+
+### Comment ça marche
+
+L'IA agit comme votre **binôme de studio** :
+- 🎧 Elle écoute votre référence sonore
+- 📖 Elle lit le manuel de votre machine
+- 🎛️ Elle vous guide pour **recréer** le son par vous-même
+
+Pas de preset tout fait. Pas de solution miracle. Juste de la **pédagogie**, étape par étape.
+
+### Pourquoi c'est gratuit ?
+
+Parce que la connaissance doit être accessible. Ce projet est open-source et le restera. Si vous progressez grâce à lui, un café virtuel fait toujours plaisir ☕""",
         "support": "☕ Soutenir (Don)",
         "title": "Groovebox Tutor",
         "subtitle": "Votre binôme technique. Décryptez le son. Maîtrisez votre machine.",
-        "placeholder": "Posez une question ou laissez l'IA analyser...",
-        "analyzing": "Analyse..." #
+        "placeholder": "Posez une question technique sur ce son...",
+        "onboarding": "👋 **Objectif : Autonomie**\n\n1. Importez le **Manuel** de votre instrument (à gauche)\n2. Proposez un **Son** qui vous inspire (ci-dessous)\n3. Votre binôme analyse la texture et vous enseigne **les étapes techniques** pour recréer ce grain vous-même",
+        "legal": "⚠️ Outil d'analyse à but éducatif. L'inspiration est légale, le plagiat ne l'est pas.",
         "sugg_1": "Analyse ce son",
         "sugg_2": "Structure rythmique",
         "sugg_3": "Fonction cachée",
@@ -110,28 +122,30 @@ L'IA n'est pas un chatbot passif. C'est un **Coach Proactif** qui :
         "formats": ["📝 Cours Complet", "✅ Checklist", "💬 Interactif"],
         "manual_loaded": "✅ Manuel assimilé",
         "active_track": "Piste active :",
-        "session_reloaded": "✅ Session rechargée !"
+        "session_reloaded": "✅ Session rechargée ! L'IA se souvient du contexte.",
+        "analyzing": "🧠 Analyse pédagogique en cours..."
     },
     "English 🇬🇧": {
         "settings": "1. Setup",
         "api_label": "Google API Key",
         "api_help": "ℹ️ Why a personal key?",
-        "api_desc": "Open-source project. Using your own free key ensures your independence.",
+        "api_desc": "Open-source project. Using your own free key ensures your independence and total tool freedom.",
         "doc_section": "2. Your Gear",
         "doc_help": "🔍 Find official manual",
         "manual_upload": "Drop PDF Manual here",
         "audio_title": "🎧 The Sound",
-        "audio_subtitle": "Drop a file here. AI will analyze it AUTOMATICALLY.",
+        "audio_subtitle": "Magic happens here. Drop your audio file.",
         "audio_label": "Audio File",
         "coach_section": "🧪 Coach Mode (Comparison)",
-        "coach_desc": "Upload your attempt here. AI will give you a SCORE out of 100.",
+        "coach_desc": "Upload your attempt here. AI will compare it with the target.",
         "coach_label": "My Attempt (mp3/wav)",
         "vision_section": "👁️ Vision Debug",
         "vision_desc": "Show your settings (Photo)",
         "vision_toggle": "Enable Camera / Upload",
         "style_section": "3. Teaching Style",
         "memory_title": "4. 💾 Session & Memory",
-        "memory_desc": "**Save your progress:**\nClick **💾 Download** to save history.",
+        "memory_help": "💡 How does it work?",
+        "memory_desc": "**Save your progress:**\n\n1. At the end of your session, click **💾 Download** below\n2. A .txt file will be downloaded with all the history\n3. Next time, drop that file here to resume\n\nThe AI will remember all context!",
         "memory_load": "📂 Resume previous session",
         "memory_save": "💾 Download Session",
         "reset": "🔄 New Session",
@@ -140,7 +154,9 @@ L'IA n'est pas un chatbot passif. C'est un **Coach Proactif** qui :
         "support": "☕ Donate",
         "title": "Groovebox Tutor",
         "subtitle": "Your technical partner. Decode sound. Master your gear.",
-        "placeholder": "Ask a question or let AI analyze...",
+        "placeholder": "Ask a technical question about this sound...",
+        "onboarding": "👋 **Goal: Autonomy**\n\n1. Upload your instrument's **Manual** (left sidebar)\n2. Provide a **Sound** that inspires you (below)\n3. Your partner analyzes the texture and teaches you **the technical steps** to recreate it yourself",
+        "legal": "⚠️ Educational analysis tool. Inspiration is legal, plagiarism is not.",
         "sugg_1": "Analyze sound",
         "sugg_2": "Rhythm structure",
         "sugg_3": "Hidden feature",
@@ -149,11 +165,12 @@ L'IA n'est pas un chatbot passif. C'est un **Coach Proactif** qui :
         "formats": ["📝 Full Lesson", "✅ Checklist", "💬 Interactive"],
         "manual_loaded": "✅ Manual loaded",
         "active_track": "Active track:",
-        "session_reloaded": "✅ Session reloaded!"
+        "session_reloaded": "✅ Session reloaded! The AI remembers the context.",
+        "analyzing": "🧠 Analysis in progress..."
     }
 }
 
-# --- 4. FONCTIONS HELPER ---
+# --- 4. FONCTIONS SYSTÈME ---
 def get_mime_type(filename):
     if filename.endswith('.m4a'): return 'audio/mp4'
     if filename.endswith('.wav'): return 'audio/wav'
@@ -176,45 +193,8 @@ def format_history(history):
         text += f"{role}: {msg['content']}\n\n"
     return text
 
-# --- 5. SYSTEM PROMPT (VERSION PROACTIVE) ---
 def build_system_prompt(lang, style_tone, style_format, memory_context, has_manual, trigger_mode=None, user_level="Intermédiaire"):
     
-    # Définition du niveau pédagogique
-    if "Débutant" in user_level:
-        level_instr = """
-        NIVEAU DÉBUTANT : TUTORIEL PAS À PAS (HANDS-ON).
-        L'utilisateur veut manipuler sa machine, pas lire de la théorie.
-        NE DIS PAS : "Ajoute de la reverb pour une ambiance planante".
-        DIS PLUTÔT : "1. Appuie sur le bouton FX (page 50). 2. Tourne le codeur C pour monter la Reverb à 40."
-        Sois impératif et précis. Utilise le manuel pour donner le NOM EXACT des boutons.
-        """
-    elif "Expert" in user_level:
-        level_instr = "NIVEAU EXPERT : Valeurs brutes (0-127), jargon technique précis, pas d'explications superflues."
-    else:
-        level_instr = "NIVEAU INTERMÉDIAIRE : Guide l'utilisateur sur la structure du son et les modules à utiliser."
-
-    manual_instruction = "Utilise le manuel comme BIBLE ABSOLUE. Cite les pages." if has_manual else "Utilise tes connaissances générales."
-    
-    base = f"""Tu es Groovebox Tutor.
-    MISSION : Guider l'utilisateur sur sa machine physique.
-    NIVEAU : {level_instr}
-    MANUEL : {manual_instruction}
-    CONTEXTE : {memory_context}
-    """
-    
-    if trigger_mode == "AUTO_ANALYSE":
-        return base + """
-        🔥 ANALYSE AUTO : L'utilisateur a chargé un son.
-        1. Si c'est un MIX COMPLET (plusieurs instruments, long) : Ne donne pas de recette. Demande quel instrument isoler (Kick, Basse, Lead ?).
-        2. Si c'est un SON SIMPLE : Donne le Diagnostic et la Recette Technique (Tableau).
-        """
-    elif trigger_mode == "AUTO_COACH":
-        return base + "⚖️ COACHING : Compare l'essai et la cible. Donne une note /100 et une correction précise selon le niveau choisi."
-    elif trigger_mode == "VISION":
-        return base + "👀 VISION : Analyse la photo des réglages."
-    else:
-        return base + "Réponds à la question."
-
     TONE_PROFILES = {
         "🤙 Mentor Cool": {"voice": "Décontracté, tutoiement", "energy": "Enthousiaste"},
         "👔 Expert Technique": {"voice": "Professionnel, précis", "energy": "Rigoureux"},
@@ -226,57 +206,47 @@ def build_system_prompt(lang, style_tone, style_format, memory_context, has_manu
     
     tone = TONE_PROFILES.get(style_tone, TONE_PROFILES["🤙 Mentor Cool"])
     
-    manual_instruction = "Utilise le manuel comme référence. Cite les pages." if has_manual else "Explique les concepts généraux."
+    # 1. GESTION DES NIVEAUX (PÉDAGOGIE)
+    if "Débutant" in user_level:
+        level_instr = """
+        NIVEAU DÉBUTANT ABSOLU : Tuto "Bouton par Bouton".
+        L'utilisateur ne connait pas la machine. Ne parle pas de théorie (pas de "nappes", "ambiances").
+        GUIDE-LE PHYSIQUEMENT sur la machine.
+        Exemple attendu : "1. Sélectionne la piste 1. 2. Appuie sur le bouton AMP. 3. Tourne le bouton A vers la droite."
+        Utilise le manuel pour nommer les boutons EXACTS.
+        """
+    elif "Expert" in user_level:
+        level_instr = "NIVEAU EXPERT : Valeurs brutes (0-127), jargon technique précis, pas d'explications superflues. Donne un tableau de patch."
+    else:
+        level_instr = "NIVEAU INTERMÉDIAIRE : Guide l'utilisateur sur la structure du son et les modules à utiliser."
+
+    manual_instruction = "Utilise le manuel comme BIBLE ABSOLUE. Cite les pages." if has_manual else "Explique les concepts généraux."
     
-    # Base du prompt
-    base = f"""Tu es Groovebox Tutor, assistant technique proactif.
-    
-    MISSION : Aider l'utilisateur à maîtriser sa machine.
-    STYLE : {tone['voice']} - {tone['energy']}. Format : {style_format}. Langue : {lang.split()[0]}.
-    
+    base = f"""Tu es Groovebox Tutor.
+    MISSION : Guider l'utilisateur sur sa machine physique.
+    STYLE : {tone['voice']} - {tone['energy']}.
+    NIVEAU PÉDAGOGIQUE : {level_instr}
     MANUEL : {manual_instruction}
     
-    {memory_context}
+    CONTEXTE : {memory_context}
     """
     
-    # INSTRUCTIONS SPÉCIFIQUES SELON LE MODE (C'est ici que la magie opère)
+    # 2. GESTION DES TRIGGERS (PROACTIVITÉ)
     if trigger_mode == "AUTO_ANALYSE":
         return base + """
-        🔥 MODE ANALYSE AUTOMATIQUE ACTIVÉ.
-        L'utilisateur vient de charger un son. NE POSE PAS DE QUESTION.
-        Fais immédiatement :
-        1. 🎯 DIAGNOSTIC : Type de son, forme d'onde, texture.
-        2. 🎛️ RECETTE TECHNIQUE (Tableau Markdown) :
-           | Paramètre | Valeur |
-           | OSC | ... |
-           | FILTER | ... |
-           | ENV | ... |
-        3. 🚀 ACTION : Donne la première étape pour commencer.
+        🔥 ACTION : Analyse le son chargé.
+        1. Si le son est LONG (> 30s) ou complexe : NE DONNE PAS DE RECETTE GLOBALE.
+           Dis : "C'est un morceau complet. Choisis un élément pour commencer : 1. Kick, 2. Basse, 3. Nappe ?"
+        2. Si le son est COURT : Donne la procédure pas à pas (selon le niveau choisi) pour le refaire.
         """
-        
     elif trigger_mode == "AUTO_COACH":
-        return base + """
-        ⚖️ MODE COACHING AUTOMATIQUE ACTIVÉ.
-        L'utilisateur vient d'envoyer son ESSAI.
-        Fais immédiatement :
-        1. 🏆 SCORE : Note la ressemblance sur 100.
-        2. 📉 TABLEAU COMPARATIF :
-           | Critère | Cible | Essai | Correction |
-           | Timbre | ... | ... | ... |
-           | Enveloppe| ... | ... | ... |
-        3. 👮 VERDICT : Dis ce qu'il faut changer pour améliorer le score.
-        """
-        
+        return base + "⚖️ ACTION : Note l'essai sur 100 et dis quel bouton tourner pour corriger l'écart."
     elif trigger_mode == "VISION":
-        return base + """
-        👀 MODE VISION.
-        Analyse l'image fournie (réglages machine).
-        Si un paramètre semble mal réglé par rapport au son voulu, dis-le.
-        """
-        
+        return base + "👀 ACTION : Regarde la photo. Est-ce que les réglages sont cohérents avec le son voulu ?"
     else:
-        return base + "Réponds à la question de l'utilisateur. Sois concis et technique."
+        return base + "Réponds à la question."
 
+# --- 5. INTERFACE ---
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -288,10 +258,11 @@ with st.sidebar:
     api_key = st.text_input(T["api_label"], type="password", placeholder="AIzaSy...")
     with st.expander(T["api_help"]):
         st.caption(T["api_desc"])
+        st.markdown("[Google AI Studio](https://aistudio.google.com/) (Free)")
 
     st.markdown("---")
     
-    # --- AJOUT PÉDAGOGIE (CORRIGÉ) ---
+    # --- AJOUT PÉDAGOGIE (NOUVEAU) ---
     st.markdown("### 🎓 Pédagogie")
     user_level = st.radio(
         "Ton Niveau", 
@@ -301,29 +272,42 @@ with st.sidebar:
     # ---------------------------------
     
     st.markdown("---")
-
+    
     # 2. FICHIERS
     st.markdown(f"### {T['doc_section']}")
     
-    # Helper Manuels
+    # Helper Manuels (CONSERVÉ)
     with st.expander(T["doc_help"]):
         MANUAL_LINKS = {
             "Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii",
             "Roland SP-404 MKII": "https://www.roland.com/global/products/sp-404mk2/support/",
             "TE EP-133 K.O. II": "https://teenage.engineering/downloads/ep-133",
+            "Korg Volca Sample 2": "https://www.korg.com/us/support/download/product/0/867/",
+            "Akai MPC One/Live": "https://www.akaipro.com/mpc-one",
+            "Novation Circuit Tracks": "https://downloads.novationmusic.com/novation/circuit/circuit-tracks",
             "Arturia MicroFreak": "https://www.arturia.com/products/hardware-synths/microfreak/resources"
         }
         machine = st.selectbox("Machine", list(MANUAL_LINKS.keys()), label_visibility="collapsed")
         st.link_button(f"⬇️ {machine}", MANUAL_LINKS[machine], use_container_width=True)
     
     # Upload 1 : Manuel PDF
-    st.caption("📄 Manuel")
-    uploaded_pdf = st.file_uploader(T["manual_upload"], type=["pdf"], label_visibility="collapsed", key="pdf_upload")
+    st.caption(f"📄 {T['manual_upload']}")
+    uploaded_pdf = st.file_uploader(
+        "Manuel PDF", 
+        type=["pdf"], 
+        label_visibility="collapsed",
+        key="pdf_upload"
+    )
     if uploaded_pdf: st.success(T["manual_loaded"])
     
-    # Upload 2 : Son Cible
-    st.caption(T["audio_title"])
-    uploaded_audio = st.file_uploader("Audio", type=["mp3", "wav", "m4a"], label_visibility="collapsed", key="audio_upload")
+    # Upload 2 : Son à analyser
+    st.caption(f"🎵 {T['audio_label']}")
+    uploaded_audio = st.file_uploader(
+        "Audio", 
+        type=["mp3", "wav", "m4a"], 
+        label_visibility="collapsed",
+        key="audio_upload"
+    )
     
     # LOGIQUE D'UPLOAD AUDIO CIBLE & AUTO-TRIGGER
     if uploaded_audio:
@@ -347,7 +331,12 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(f"### {T['coach_section']}")
     st.caption(T['coach_desc'])
-    uploaded_try = st.file_uploader(T['coach_label'], type=["mp3", "wav", "m4a"], key="try_upload")
+    
+    uploaded_try = st.file_uploader(
+        T['coach_label'], 
+        type=["mp3", "wav", "m4a"], 
+        key="try_upload"
+    )
     
     # LOGIQUE D'UPLOAD ESSAI & AUTO-TRIGGER
     if uploaded_try:
@@ -359,7 +348,7 @@ with st.sidebar:
                 # 🔥 DÉCLENCHEUR PROACTIF
                 st.session_state.auto_trigger = "AUTO_COACH"
              st.success("✅ Essai prêt")
-    
+
     # --- VISION DEBUG ---
     st.markdown("---")
     st.markdown(f"### {T['vision_section']}")
@@ -381,10 +370,11 @@ with st.sidebar:
         st.image(uploaded_img, width=220)
         img_data = Image.open(uploaded_img)
         st.session_state.vision_ref = img_data
+        st.toast("👀 L'IA voit tes réglages !")
 
     st.markdown("---")
     
-    # 3. STYLE PÉDAGOGIQUE
+    # 3. STYLE & MEMOIRE
     st.markdown(f"### {T['style_section']}")
     style_tone = st.selectbox("Ton", T["tones"], index=0, label_visibility="collapsed")
     style_format = st.radio("Format", T["formats"], index=0, label_visibility="collapsed")
@@ -401,7 +391,14 @@ with st.sidebar:
     if "chat_history" in st.session_state and st.session_state.chat_history:
         col_dl, col_reset = st.columns(2)
         with col_dl:
-            st.download_button("💾", format_history(st.session_state.chat_history), "session.txt", use_container_width=True, type="primary")
+            st.download_button(
+                "💾", 
+                format_history(st.session_state.chat_history), 
+                f"groovebox_session_{datetime.now().strftime('%Y%m%d_%H%M')}.txt",
+                "text/plain", 
+                use_container_width=True, 
+                type="primary"
+            )
         with col_reset:
             if st.button("🔄", use_container_width=True, type="secondary"):
                 st.session_state.clear()
@@ -415,55 +412,14 @@ with st.sidebar:
 st.title(T["title"])
 st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;'>{T['subtitle']}</h3>", unsafe_allow_html=True)
 
-# --- LOGIC V4.0 (GEMINI 2.0 FLASH + PROACTIVITÉ TOTALE) ---
+# --- LOGIC V5.0 (GEMINI 2.0 FLASH + PROACTIVITÉ + NO BUGS) ---
 if api_key:
     genai.configure(api_key=api_key)
     
-    # 1. GESTION DU PDF
-    if uploaded_pdf:
-        if "current_pdf_name" not in st.session_state or st.session_state.current_pdf_name != uploaded_pdf.name:
-            with st.status("Traitement du manuel...", expanded=False) as status:
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
-                    t.write(uploaded_pdf.getvalue())
-                    p = t.name
-                r = upload_pdf_to_gemini(p)
-                if r: 
-                    st.session_state.pdf_ref = r
-                    st.session_state.current_pdf_name = uploaded_pdf.name
-                    status.update(label="✅ Manuel assimilé", state="complete")
-
-    # 2. GESTION AUDIO CIBLE (Upload Gemini)
-    if "current_audio_path" in st.session_state:
-        if "audio_ref" not in st.session_state or st.session_state.get("last_uploaded_audio") != st.session_state.current_audio_name:
-             with st.status("Analyse du son cible...", expanded=False) as status:
-                try:
-                    audio_file_ref = genai.upload_file(path=st.session_state.current_audio_path)
-                    while audio_file_ref.state.name == "PROCESSING":
-                        time.sleep(0.5)
-                        audio_file_ref = genai.get_file(audio_file_ref.name)
-                    st.session_state.audio_ref = audio_file_ref
-                    st.session_state.last_uploaded_audio = st.session_state.current_audio_name
-                    status.update(label="✅ Audio Cible prêt", state="complete")
-                except Exception as e: st.error(f"Erreur Audio: {e}")
-
-    # 3. GESTION AUDIO ESSAI (Upload Gemini)
-    if "try_path" in st.session_state:
-        if "try_ref" not in st.session_state or st.session_state.get("last_uploaded_try") != st.session_state.current_try_name:
-             with st.spinner("L'IA écoute votre essai..."):
-                try:
-                    tr_ref = genai.upload_file(path=st.session_state.try_path)
-                    while tr_ref.state.name == "PROCESSING":
-                        time.sleep(0.5)
-                        tr_ref = genai.get_file(tr_ref.name)
-                    st.session_state.try_ref = tr_ref
-                    st.session_state.last_uploaded_try = st.session_state.current_try_name
-                    st.toast("✅ Essai reçu !")
-                except: pass
-
-    # . AFFICHAGE HISTORIQUE (Doit être AVANT les inputs pour ne pas clignoter)
+    # 0. INITIALISATION CHAT
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
-    # --- CORRECTION BUG : AFFICHAGE DU CHAT EN PREMIER ---
-    # On crée un conteneur pour le chat afin qu'il soit stable
+
+    # --- CORRECTION BUG : AFFICHAGE DU CHAT EN PREMIER (STABLE) ---
     chat_container = st.container()
     with chat_container:
         for m in st.session_state.chat_history:
@@ -492,22 +448,31 @@ if api_key:
 
     # 2. GESTION DES TRIGGERS & INPUT
     prompt = None
-    trigger = st.session_state.get("trigger")
+    trigger = st.session_state.get("auto_trigger") # CORRECTION NOM VARIABLE
 
     if trigger == "AUTO_ANALYSE":
         prompt = "🔥 [AUTO] Analyse ce fichier. Guide-moi selon mon niveau."
-        # Pas d'affichage user ici pour éviter le doublon visuel immédiat, l'IA répondra direct.
-        st.session_state.trigger = None
+        # Pas d'ajout user immédiat pour éviter doublon
+        st.session_state.auto_trigger = None
 
     elif trigger == "AUTO_COACH":
         prompt = "⚖️ [AUTO] J'ai envoyé mon essai. Corrige-moi."
-        st.session_state.trigger = None
+        st.session_state.auto_trigger = None
     
     else:
+        # Suggestion Buttons
+        if not st.session_state.chat_history:
+            col1, col2, col3 = st.columns(3)
+            if col1.button(T["sugg_1"], use_container_width=True): prompt = T["sugg_1"]
+            elif col2.button(T["sugg_2"], use_container_width=True): prompt = T["sugg_2"]
+            elif col3.button(T["sugg_3"], use_container_width=True): prompt = T["sugg_3"]
+
         user_input = st.chat_input(T["placeholder"])
-        if user_input:
-            prompt = user_input
-            with chat_container: # On ajoute visuellement tout de suite
+        if user_input: prompt = user_input
+        
+        # Si un prompt manuel est détecté
+        if prompt:
+            with chat_container:
                 with st.chat_message("user"): st.markdown(prompt)
             st.session_state.chat_history.append({"role": "user", "content": prompt})
 
@@ -516,7 +481,7 @@ if api_key:
         # On affiche un spinner DANS le container du chat
         with chat_container:
             with st.chat_message("assistant"):
-                with st.spinner("🧠 Analyse en cours..."):
+                with st.spinner(T["analyzing"]): # Utilisation de la clé T corrigée
                     try:
                         req = []
                         if "pdf_ref" in st.session_state: req.extend([st.session_state.pdf_ref, "MANUEL"])
@@ -526,13 +491,14 @@ if api_key:
                         req.append(prompt)
                         
                         sys_prompt = build_system_prompt(
-                            "Français", "Mentor Cool", "Cours Complet", 
+                            lang, style_tone, style_format, 
                             st.session_state.get("memory_content", ""), 
                             "pdf_ref" in st.session_state,
                             trigger_mode="AUTO_ANALYSE" if trigger == "AUTO_ANALYSE" else "AUTO_COACH" if trigger == "AUTO_COACH" else None,
                             user_level=user_level
                         )
 
+                        # Modele Flash 2.0 (Le plus rapide et stable)
                         model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
                         resp = model.generate_content(req)
                         
@@ -542,4 +508,4 @@ if api_key:
                         st.error(f"Erreur : {e}")
 
 else:
-    st.sidebar.warning("⚠️ Clé API requise")
+    st.sidebar.warning("⚠️ Clé API requise / API Key needed")
