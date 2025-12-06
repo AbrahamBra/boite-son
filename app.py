@@ -491,5 +491,34 @@ if api_key:
                 with st.chat_message("user"): st.markdown(prompt)
             st.session_state.chat_history.append({"role": "user", "content": prompt})
 
+    # 3. GÉNÉRATION IA (C'EST LA PARTIE QUI MANQUAIT CHEZ TOI)
+    if prompt:
+        with chat_container:
+            with st.chat_message("assistant"):
+                with st.spinner(T["analyzing"]):
+                    try:
+                        req = []
+                        if "pdf_ref" in st.session_state: req.extend([st.session_state.pdf_ref, "MANUEL"])
+                        if "audio_ref" in st.session_state: req.extend([st.session_state.audio_ref, "CIBLE"])
+                        if "try_ref" in st.session_state: req.extend([st.session_state.try_ref, "ESSAI"])
+                        if "vision_ref" in st.session_state: req.extend([st.session_state.vision_ref, "PHOTO"])
+                        req.append(prompt)
+                        
+                        sys_prompt = build_system_prompt(
+                            "Français", "Mentor", "Standard", # Valeurs par défaut
+                            st.session_state.get("memory_content", ""), 
+                            "pdf_ref" in st.session_state,
+                            trigger_mode=trigger if trigger else "VISION" if "vision_ref" in st.session_state else None,
+                            user_level=user_level
+                        )
+
+                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
+                        resp = model.generate_content(req)
+                        
+                        st.markdown(resp.text)
+                        st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
+                    except Exception as e:
+                        st.error(f"Erreur : {e}")
+
 else:
     st.sidebar.warning("⚠️ Clé API requise / API Key needed")
