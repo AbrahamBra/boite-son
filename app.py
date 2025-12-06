@@ -362,35 +362,6 @@ Analyser l'audio fourni, {"utiliser le manuel technique de la machine" if has_ma
 
 {memory_context}
 
----
-
-# 🎧 ANALYSE AUDIO (ce que tu fais en interne)
-
-Quand l'utilisateur partage un son :
-
-1. **Décomposition spectrale**
-   - Fréquences dominantes (sub/bass/mid/high)
-   - Harmoniques présents (fondamentale, octaves, partiels)
-   - Composantes de bruit (white/pink noise, texture)
-
-2. **Analyse temporelle**
-   - Envelope globale : Attack / Decay / Sustain / Release
-   - Modulations : vibrato, tremolo, filter sweep, pitch bend
-   - Rythmique interne : gates, arpeggios, patterns
-
-3. **Identification des effets**
-   - Reverb (taille, decay, wet/dry)
-   - Delay (time, feedback, ping-pong)
-   - Distortion/saturation
-   - Filtrage dynamique (LFO, envelope)
-   - Autres (chorus, phaser, flanger, etc.)
-
-4. **Hypothèse de synthèse**
-   - Type probable : soustractive / FM / wavetable / sample-based / granular
-   - Forme d'onde estimée
-   - Chaîne de traitement (oscillator → filter → envelope → FX)
-
----
 
 # 📖 UTILISATION DU MANUEL
 
