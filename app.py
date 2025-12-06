@@ -71,6 +71,8 @@ TR = {
         "doc_section": "2. Votre Machine",
         "doc_help": "🔍 Trouver mon manuel officiel",
         "manual_upload": "Déposer le Manuel PDF ici",
+        "level_label": "Ton niveau actuel",
+        "levels": ["Débutant (Explique-moi)", "Intermédiaire (Guide-moi)", "Expert (Valeurs brutes)"],
         "audio_title": "🎧 Le Son à Analyser",
         "audio_subtitle": "Glissez un fichier ici. L'IA l'analysera AUTOMATIQUEMENT.",
         "audio_label": "Fichier Audio",
@@ -176,8 +178,37 @@ def format_history(history):
     return text
 
 # --- 5. SYSTEM PROMPT (VERSION PROACTIVE) ---
-def build_system_prompt(lang, style_tone, style_format, memory_context, has_manual, trigger_mode=None):
+def build_system_prompt(lang, style_tone, style_format, memory_context, has_manual, trigger_mode=None, user_level="Intermédiaire"):
     
+    # Définition du niveau pédagogique
+    if "Débutant" in user_level:
+        level_instr = "NIVEAU DÉBUTANT : Vulgarise tout. N'utilise pas de jargon sans expliquer. Si le fichier audio est complexe (9mn+), propose de le découper."
+    elif "Expert" in user_level:
+        level_instr = "NIVEAU EXPERT : Sois concis. Donne directement les valeurs (0-127). Pas de blabla."
+    else:
+        level_instr = "NIVEAU INTERMÉDIAIRE : Guide l'utilisateur. Donne les réglages mais laisse-le tourner les boutons."
+
+    manual_instruction = "Utilise le manuel comme référence. Cite les pages." if has_manual else "Explique les concepts généraux."
+    
+    base = f"""Tu es Groovebox Tutor. MISSION : Enseigner la synthèse sonore.
+    STYLE : {level_instr}
+    MANUEL : {manual_instruction}
+    CONTEXTE : {memory_context}
+    """
+    
+    if trigger_mode == "AUTO_ANALYSE":
+        return base + """
+        🔥 ANALYSE AUTO : L'utilisateur a chargé un son.
+        1. Si c'est un MIX COMPLET (plusieurs instruments, long) : Ne donne pas de recette. Demande quel instrument isoler (Kick, Basse, Lead ?).
+        2. Si c'est un SON SIMPLE : Donne le Diagnostic et la Recette Technique (Tableau).
+        """
+    elif trigger_mode == "AUTO_COACH":
+        return base + "⚖️ COACHING : Compare l'essai et la cible. Donne une note /100 et une correction précise selon le niveau choisi."
+    elif trigger_mode == "VISION":
+        return base + "👀 VISION : Analyse la photo des réglages."
+    else:
+        return base + "Réponds à la question."
+
     TONE_PROFILES = {
         "🤙 Mentor Cool": {"voice": "Décontracté, tutoiement", "energy": "Enthousiaste"},
         "👔 Expert Technique": {"voice": "Professionnel, précis", "energy": "Rigoureux"},
@@ -240,7 +271,6 @@ def build_system_prompt(lang, style_tone, style_format, memory_context, has_manu
     else:
         return base + "Réponds à la question de l'utilisateur. Sois concis et technique."
 
-# --- 6. INTERFACE ---
 
 # --- SIDEBAR ---
 with st.sidebar:
@@ -255,6 +285,17 @@ with st.sidebar:
 
     st.markdown("---")
     
+    # --- AJOUT PÉDAGOGIE (CORRIGÉ) ---
+    st.markdown("### 🎓 Pédagogie")
+    user_level = st.radio(
+        "Ton Niveau", 
+        ["Débutant", "Intermédiaire", "Expert"],
+        index=1
+    )
+    # ---------------------------------
+    
+    st.markdown("---")
+
     # 2. FICHIERS
     st.markdown(f"### {T['doc_section']}")
     
@@ -413,34 +454,31 @@ if api_key:
                     st.toast("✅ Essai reçu !")
                 except: pass
 
-    # 4. CHAT DISPLAY
+    # 4. AFFICHAGE HISTORIQUE (Doit être AVANT les inputs pour ne pas clignoter)
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
     
     for m in st.session_state.chat_history:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    # --- MOTEUR DE DÉCISION (TRIGGER OU MANUEL) ---
-    
-    # Est-ce qu'on a un déclencheur automatique en attente ?
-    trigger_mode = st.session_state.get("auto_trigger", None)
-    
+    # --- LOGIQUE DES DÉCLENCHEURS ---
     prompt = None
-    
-    if trigger_mode == "ANALYSE":
-        prompt = "🔥 [AUTO] Analyse le son cible reçu. Fais le diagnostic et donne la recette."
-        # On affiche un petit message système pour que l'user comprenne
-        with st.chat_message("user"): st.markdown("🎵 *Audio chargé. Analyse automatique...*")
-        st.session_state.chat_history.append({"role": "user", "content": "🎵 *Audio chargé. Analyse automatique...*"})
-        st.session_state.auto_trigger = None # Reset
-        
-    elif trigger_mode == "COACH":
-        prompt = "⚖️ [AUTO] J'ai envoyé mon essai. Compare et note-moi."
-        with st.chat_message("user"): st.markdown("🎤 *Essai chargé. Demande de coaching...*")
-        st.session_state.chat_history.append({"role": "user", "content": "🎤 *Essai chargé. Demande de coaching...*"})
-        st.session_state.auto_trigger = None # Reset
-        
+    # On récupère le trigger défini lors de l'upload (ANALYSE ou COACH)
+    trigger = st.session_state.get("auto_trigger") 
+
+    if trigger == "ANALYSE":
+        prompt = "🔥 [AUTO] Analyse ce son. Attention à la durée du fichier."
+        with st.chat_message("user"): st.markdown("🎵 *Audio chargé... Analyse en cours*")
+        st.session_state.chat_history.append({"role": "user", "content": "🎵 *Audio chargé... Analyse en cours*"})
+        st.session_state.auto_trigger = None # On reset le trigger
+
+    elif trigger == "COACH":
+        prompt = "⚖️ [AUTO] Note mon essai sur 100."
+        with st.chat_message("user"): st.markdown("🧪 *Essai envoyé pour correction*")
+        st.session_state.chat_history.append({"role": "user", "content": "🧪 *Essai envoyé pour correction*"})
+        st.session_state.auto_trigger = None
+
     else:
-        # Pas de trigger, on attend l'input utilisateur
+        # Input manuel (si pas de trigger auto)
         user_input = st.chat_input(T["placeholder"])
         if user_input:
             prompt = user_input
@@ -449,62 +487,34 @@ if api_key:
 
     # 5. GÉNÉRATION IA
     if prompt:
-        
-        # Tools & Context
-        tools = None 
-        memory_context = ""
-        if "memory_content" in st.session_state:
-            memory_context = f"## MEMOIRE\n{st.session_state.memory_content}\n"
-
-        # Le Prompt Système reçoit le MODE (Analyse, Coach, ou Normal)
-        sys_prompt = build_system_prompt(
-            lang=lang,
-            style_tone=style_tone,
-            style_format=style_format,
-            memory_context=memory_context,
-            has_manual="pdf_ref" in st.session_state,
-            trigger_mode="AUTO_ANALYSE" if trigger_mode == "ANALYSE" else "AUTO_COACH" if trigger_mode == "COACH" else "VISION" if "vision_ref" in st.session_state and prompt == "vision" else None
-        )
-        
-        # MODEL SELECTION (GEMINI 2.0 FLASH)
-        target_model = "gemini-2.0-flash-exp"
-        try:
-            model = genai.GenerativeModel(target_model, system_instruction=sys_prompt, tools=tools)
-        except:
-            model = genai.GenerativeModel("gemini-1.5-pro", system_instruction=sys_prompt)
-
-        # REQUETE MULTIMODALE
-        req = []
-        
-        if "pdf_ref" in st.session_state:
-            req.append(st.session_state.pdf_ref)
-            req.append("MANUEL TECHNIQUE (Référence).")
-            
-        if "audio_ref" in st.session_state:
-            req.append(st.session_state.audio_ref)
-            req.append("SON CIBLE.")
-            
-        if "try_ref" in st.session_state:
-            req.append(st.session_state.try_ref)
-            req.append("SON ESSAI.")
-
-        if "vision_ref" in st.session_state:
-            req.append(st.session_state.vision_ref)
-            req.append("IMAGE MACHINE.")
-
-        req.append(prompt)
-
         with st.chat_message("assistant"):
-            with st.spinner(f"Brainstorming ({target_model})..."):
+            with st.spinner("Réflexion..."):
                 try:
+                    # Contexte
+                    req = []
+                    if "pdf_ref" in st.session_state: req.extend([st.session_state.pdf_ref, "MANUEL"])
+                    if "audio_ref" in st.session_state: req.extend([st.session_state.audio_ref, "SON CIBLE"])
+                    if "try_ref" in st.session_state: req.extend([st.session_state.try_ref, "ESSAI"])
+                    if "vision_ref" in st.session_state: req.extend([st.session_state.vision_ref, "PHOTO"])
+                    req.append(prompt)
+
+                    # Prompt intelligent
+                    sys_prompt = build_system_prompt(
+                        lang, style_tone, style_format, 
+                        st.session_state.get("memory_content", ""), 
+                        "pdf_ref" in st.session_state,
+                        trigger_mode=trigger if trigger else "VISION" if "vision_ref" in st.session_state else None,
+                        user_level=user_level # On passe le niveau choisi
+                    )
+
+                    # Appel Gemini 2.0
+                    model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
                     resp = model.generate_content(req)
-                    text_resp = resp.text
                     
-                    if "2.0" in target_model: st.caption(f"⚡ {target_model}")
-                    st.markdown(text_resp)
-                    st.session_state.chat_history.append({"role": "assistant", "content": text_resp})
+                    st.markdown(resp.text)
+                    st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
                 except Exception as e:
-                    st.error(f"Erreur IA : {e}")
+                    st.error(f"Erreur : {e}")
 
 else:
-    st.sidebar.warning("⚠️ Clé API requise / API Key needed")
+    st.sidebar.warning("⚠️ Clé API requise")
