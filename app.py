@@ -473,9 +473,14 @@ if api_key:
         
         # Choix du modèle (Si le modèle expérimental bug, replis-toi sur le 1.5 Pro)
         try:
-            model = genai.GenerativeModel("gemini-1.5-pro", system_instruction=sys_prompt, tools=tools)
-        except:
             model = genai.GenerativeModel("gemini-1.5-flash", system_instruction=sys_prompt, tools=tools)
+        except Exception as e:
+            # Si Flash échoue, on tente une version spécifique du Pro
+            try:
+                model = genai.GenerativeModel("gemini-1.5-pro-latest", system_instruction=sys_prompt, tools=tools)
+            except:
+                st.error("Impossible d'initialiser le modèle IA. Vérifiez votre clé API.")
+                st.stop()
         
         # --- CONSTRUCTION DE LA REQUÊTE (C'est ici que tout se joue) ---
         req = []
