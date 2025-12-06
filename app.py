@@ -182,31 +182,56 @@ The AI acts as your **studio partner**:
 
 # --- 4. FONCTIONS SYSTÈME ---
 def format_history_for_context(history):
-    """Transforme l'historique du chat en texte pour la mémoire de l'IA"""
-    context_str = "\n--- HISTORIQUE DE LA CONVERSATION (RÉCENT) ---\n"
-    # On prend les 10 derniers échanges pour garder le contexte frais
+    """
+    Transforme l'historique visuel du chat en texte brut pour le 'cerveau' de l'IA.
+    C'est ça qui permet à l'IA de se souvenir que tu as choisi 'Basse'.
+    """
+    context_str = "\n--- DÉBUT DE L'HISTORIQUE DE CONVERSATION (CONTEXTE) ---\n"
+    # On prend les 10 derniers échanges pour avoir un bon contexte
     for msg in history[-10:]:
-        role = "UTILISATEUR" if msg['role'] == "user" else "ASSISTANT (TOI)"
+        role = "UTILISATEUR" if msg['role'] == "user" else "GROOVEBOX TUTOR (TOI)"
         context_str += f"{role}: {msg['content']}\n"
-    context_str += "--- FIN HISTORIQUE ---\n"
+    context_str += "--- FIN DE L'HISTORIQUE ---\n"
     return context_str
 
-def build_system_prompt(lang, style_tone, user_level, has_manual, chat_context_str):
+def build_system_prompt(user_level, has_manual, chat_context_str):
     
-    # LOGIQUE DE NIVEAU RENFORCÉE
+    # 1. LOGIQUE DE NIVEAU STRICTE
     if "Débutant" in user_level:
         level_instr = """
-        🚨 MODE : DÉBUTANT ABSOLU (PAS À PAS)
-        TON BUT : Faire manipuler la machine physiquement.
-        INTERDICTION : Pas de théorie, pas de compliments inutiles ("Super choix !").
-        
-        FORMAT DE RÉPONSE OBLIGATOIRE :
-        1. Donne UNE seule instruction à la fois (ex: "Appuie sur le bouton AMP").
-        2. Indique où se trouve le bouton si nécessaire.
-        3. Donne la valeur exacte (ex: "Tourne le potard D jusqu'à 64").
-        
-        Si l'utilisateur répond "C'est fait" ou "Ok", passe à l'étape suivante.
+        🚨 MODE : DÉBUTANT ABSOLU (PAS À PAS).
+        Ton interlocuteur ne connait PAS le jargon.
+        RÈGLE 1 : Ne donne JAMAIS plus d'une instruction physique à la fois.
+        RÈGLE 2 : Guide le doigt de l'utilisateur ("Appuie sur le bouton AMP en haut à droite").
+        RÈGLE 3 : Si l'utilisateur confirme ("C'est fait", "Ok", "Basse"), PASSE À L'ÉTAPE SUIVANTE immédiatement sans blabla.
         """
+    elif "Expert" in user_level:
+        level_instr = "MODE : EXPERT. Sois concis. Donne les tables de valeurs (0-127), les CC MIDI et les pages du manuel."
+    else:
+        level_instr = "MODE : INTERMÉDIAIRE. Explique le concept sonore (enveloppe, filtre) puis dis quel menu ouvrir."
+
+    manual_instr = "Tu as le manuel chargé. Cite la PAGE exacte pour chaque affirmation." if has_manual else "Base-toi sur tes connaissances générales de cette machine."
+
+    # 2. PROMPT SYSTÈME FINAL
+    return f"""
+    Tu es "Groovebox Tutor", un coach expert en hardware musical.
+    
+    TA MISSION : Aider l'utilisateur à refaire le son qu'il t'a envoyé (Fichier Audio) sur sa machine (Manuel).
+    
+    INSTRUCTIONS PÉDAGOGIQUES :
+    {level_instr}
+    
+    INSTRUCTIONS MANUEL :
+    {manual_instr}
+    
+    IMPORTANT - GESTION DE LA CONVERSATION :
+    Lis attentivement l'HISTORIQUE ci-dessous.
+    Si l'utilisateur répond à une de tes questions (exemple: tu as demandé "Quel instrument ?", il répond "Kick"),
+    NE DIS PAS "Ah super choix le kick".
+    DONNE DIRECTEMENT LA PREMIÈRE ÉTAPE TECHNIQUE pour faire le kick sur sa machine.
+    
+    {chat_context_str}
+    """
     elif "Expert" in user_level:
         level_instr = "MODE : EXPERT. Sois concis. Donne les tables de valeurs, les numéros de CC MIDI et les pages du manuel. Pas de blabla."
     else:
@@ -360,265 +385,3 @@ else:
                         st.error(f"Erreur IA : {e}")
 
 
-def get_mime_type(filename):
-    if filename.endswith('.m4a'): return 'audio/mp4'
-    if filename.endswith('.wav'): return 'audio/wav'
-    return 'audio/mp3'
-
-def upload_pdf_to_gemini(path):
-    try:
-        file_ref = genai.upload_file(path=path, mime_type="application/pdf")
-        while file_ref.state.name == "PROCESSING":
-            time.sleep(1)
-            file_ref = genai.get_file(file_ref.name)
-        if file_ref.state.name == "FAILED": return None
-        return file_ref
-    except: return None
-
-def format_history(history):
-    text = f"SESSION {datetime.now().strftime('%Y-%m-%d')}\n---\n"
-    for msg in history:
-        role = "USER" if msg['role'] == "user" else "AI"
-        text += f"{role}: {msg['content']}\n\n"
-    return text
-
-def build_system_prompt(lang, style_tone, style_format, memory_context, has_manual, trigger_mode=None, user_level="Intermédiaire"):
-    
-    TONE_PROFILES = {
-        "🤙 Mentor Cool": {"voice": "Décontracté, tutoiement", "energy": "Enthousiaste"},
-        "👔 Expert Technique": {"voice": "Professionnel, précis", "energy": "Rigoureux"},
-        "⚡ Synthétique": {"voice": "Direct, efficace", "energy": "Minimaliste"},
-        "🤙 Cool Mentor": {"voice": "Casual, encouraging", "energy": "Enthusiastic"},
-        "👔 Technical Expert": {"voice": "Professional, precise", "energy": "Rigorous"},
-        "⚡ Direct": {"voice": "Straight to the point", "energy": "Minimalist"}
-    }
-    
-    tone = TONE_PROFILES.get(style_tone, TONE_PROFILES["🤙 Mentor Cool"])
-    
-    # 1. GESTION DES NIVEAUX (PÉDAGOGIE)
-    if "Débutant" in user_level:
-        level_instr = """
-        NIVEAU DÉBUTANT ABSOLU : Tuto "Bouton par Bouton".
-        L'utilisateur ne connait pas la machine. Ne parle pas de théorie (pas de "nappes", "ambiances").
-        GUIDE-LE PHYSIQUEMENT sur la machine.
-        Exemple attendu : "1. Sélectionne la piste 1. 2. Appuie sur le bouton AMP. 3. Tourne le bouton A vers la droite."
-        Utilise le manuel pour nommer les boutons EXACTS.
-        """
-    elif "Expert" in user_level:
-        level_instr = "NIVEAU EXPERT : Valeurs brutes (0-127), jargon technique précis, pas d'explications superflues. Donne un tableau de patch."
-    else:
-        level_instr = "NIVEAU INTERMÉDIAIRE : Guide l'utilisateur sur la structure du son et les modules à utiliser."
-
-    manual_instruction = "Utilise le manuel comme BIBLE ABSOLUE. Cite les pages." if has_manual else "Explique les concepts généraux."
-    
-    base = f"""Tu es Groovebox Tutor.
-    MISSION : Guider l'utilisateur sur sa machine physique.
-    STYLE : {tone['voice']} - {tone['energy']}.
-    NIVEAU PÉDAGOGIQUE : {level_instr}
-    MANUEL : {manual_instruction}
-    
-    CONTEXTE : {memory_context}
-    """
-    
-    # 2. GESTION DES TRIGGERS (PROACTIVITÉ)
-    if trigger_mode == "AUTO_ANALYSE":
-        return base + """
-        🔥 ACTION : Analyse le son chargé.
-        1. Si le son est LONG (> 30s) ou complexe : NE DONNE PAS DE RECETTE GLOBALE.
-           Dis : "C'est un morceau complet. Choisis un élément pour commencer : 1. Kick, 2. Basse, 3. Nappe ?"
-        2. Si le son est COURT : Donne la procédure pas à pas (selon le niveau choisi) pour le refaire.
-        """
-    elif trigger_mode == "AUTO_COACH":
-        return base + "⚖️ ACTION : Note l'essai sur 100 et dis quel bouton tourner pour corriger l'écart."
-    elif trigger_mode == "AUTO_MANUAL":
-        return base + """
-        👋 ACTION : L'utilisateur vient de charger le manuel.
-        Salue-le brièvement. Confirme le nom de la machine détectée.
-        Demande : "Veux-tu faire du Sound Design, comprendre une fonction, ou être coaché ?"
-        """
-    elif trigger_mode == "VISION":
-        return base + "👀 ACTION : Regarde la photo. Est-ce que les réglages sont cohérents avec le son voulu ?"
-    else:
-        return base + "Réponds à la question."
-
-# --- 5. LOGIQUE PRINCIPALE ---
-
-# A. INITIALISATION
-if "chat_history" not in st.session_state: st.session_state.chat_history = []
-
-# B. SIDEBAR (WIDGETS & CALCULS FICHIERS)
-with st.sidebar:
-    lang = st.selectbox("Langue / Language", list(TR.keys()), label_visibility="collapsed")
-    T = TR.get(lang, TR["Français 🇫🇷"])
-    
-    st.markdown(f"### {T['settings']}")
-    api_key = st.text_input(T["api_label"], type="password", placeholder="AIzaSy...")
-    if api_key: genai.configure(api_key=api_key)
-
-    st.markdown("---")
-    st.markdown("### 🎓 Pédagogie")
-    user_level = st.radio("Ton Niveau", ["Débutant (Pas à pas)", "Intermédiaire (Guide)", "Expert (Valeurs)"], index=0)
-    
-    st.markdown("---")
-    st.markdown(f"### {T['doc_section']}")
-    
-    # Helper Manuels
-    with st.expander(T["doc_help"]):
-        MANUAL_LINKS = {
-            "Elektron Digitakt II": "https://www.elektron.se/en/support-downloads/digitakt-ii",
-            "Roland SP-404 MKII": "https://www.roland.com/global/products/sp-404mk2/support/",
-            "TE EP-133 K.O. II": "https://teenage.engineering/downloads/ep-133",
-            "Korg Volca Sample 2": "https://www.korg.com/us/support/download/product/0/867/",
-            "Akai MPC One/Live": "https://www.akaipro.com/mpc-one",
-            "Novation Circuit Tracks": "https://downloads.novationmusic.com/novation/circuit/circuit-tracks",
-            "Arturia MicroFreak": "https://www.arturia.com/products/hardware-synths/microfreak/resources"
-        }
-        machine = st.selectbox("Machine", list(MANUAL_LINKS.keys()), label_visibility="collapsed")
-        st.link_button(f"⬇️ {machine}", MANUAL_LINKS[machine], use_container_width=True)
-    
-    # 1. Manuel PDF + TRIGGER
-    uploaded_pdf = st.file_uploader(T["manual_upload"], type=["pdf"], label_visibility="collapsed")
-    if uploaded_pdf and "pdf_ref" not in st.session_state and api_key:
-        with st.status("Lecture Manuel...", expanded=False):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
-                t.write(uploaded_pdf.getvalue()); path=t.name
-            ref = genai.upload_file(path, mime_type="application/pdf")
-            while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
-            st.session_state.pdf_ref = ref
-            st.session_state.auto_trigger = "AUTO_MANUAL"
-            st.rerun()
-    if "pdf_ref" in st.session_state: st.success(T["manual_loaded"])
-    
-    # 2. Audio Cible + TRIGGER
-    st.caption(T["audio_title"])
-    uploaded_audio = st.file_uploader("Audio", type=["mp3", "wav", "m4a"], label_visibility="collapsed")
-    if uploaded_audio and api_key:
-        if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
-            with st.status("Analyse Cible...", expanded=False):
-                suffix = f".{uploaded_audio.name.split('.')[-1]}"
-                with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-                    tmp.write(uploaded_audio.getvalue())
-                    path = tmp.name
-                ref = genai.upload_file(path)
-                while ref.state.name == "PROCESSING": time.sleep(0.5); ref = genai.get_file(ref.name)
-                st.session_state.audio_ref = ref
-                st.session_state.current_audio_path = path
-                st.session_state.current_audio_name = uploaded_audio.name
-                st.session_state.auto_trigger = "AUTO_ANALYSE"
-                st.rerun()
-    if "current_audio_path" in st.session_state: st.audio(st.session_state.current_audio_path)
-
-    st.markdown("---")
-    st.markdown(f"### {T['coach_section']}")
-    st.caption(T['coach_desc'])
-    uploaded_try = st.file_uploader(T['coach_label'], type=["mp3", "wav", "m4a"])
-    
-    # 3. Essai + TRIGGER
-    if uploaded_try and api_key:
-        if "current_try_name" not in st.session_state or st.session_state.get("current_try_name") != uploaded_try.name:
-             with st.status("Analyse Essai...", expanded=False):
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as t:
-                    t.write(uploaded_try.getvalue()); path=t.name
-                ref = genai.upload_file(path)
-                while ref.state.name == "PROCESSING": time.sleep(0.5); ref = genai.get_file(ref.name)
-                st.session_state.try_ref = ref
-                st.session_state.current_try_name = uploaded_try.name
-                st.session_state.auto_trigger = "AUTO_COACH"
-                st.rerun()
-
-    st.markdown("---")
-    st.markdown(f"### {T['vision_section']}")
-    img_mode = st.toggle(T['vision_toggle'])
-    uploaded_img = None
-    if img_mode:
-        tab1, tab2 = st.tabs(["📸", "📂"])
-        with tab1: uploaded_img = st.camera_input("Photo")
-        with tab2: 
-            up = st.file_uploader("Image", type=["jpg", "png"])
-            if up: uploaded_img = up
-    
-    if uploaded_img:
-        st.session_state.vision_ref = Image.open(uploaded_img)
-        st.toast("Vision active")
-
-    # 3. STYLE & MEMOIRE
-    st.markdown("---")
-    st.markdown(f"### {T['style_section']}")
-    style_tone = st.selectbox("Ton", ["Mentor Cool", "Expert Technique", "Synthétique"], index=0, label_visibility="collapsed")
-    style_format = st.radio("Format", ["Cours Complet", "Checklist", "Interactif"], index=0, label_visibility="collapsed")
-
-    st.markdown("---")
-    with st.expander("💾 Sauvegarde"):
-        if st.button("Reset Chat", use_container_width=True):
-            st.session_state.clear()
-            st.rerun()
-            
-    with st.expander(T["about"]):
-        st.markdown(T["about_text"])
-
-# C. MAIN AREA (AFFICHAGE CHAT IMMÉDIAT)
-st.title(T["title"])
-st.caption(T["subtitle"])
-
-if not api_key:
-    st.warning("⚠️ Entrez votre clé API dans la barre latérale pour commencer.")
-else:
-    # 1. AFFICHAGE DU CHAT (STABLE)
-    chat_container = st.container()
-    with chat_container:
-        for m in st.session_state.chat_history:
-            with st.chat_message(m["role"]): st.markdown(m["content"])
-
-    # 2. GESTION DES TRIGGERS ET INPUT
-    prompt = None
-    trigger = st.session_state.get("auto_trigger")
-
-    if trigger == "AUTO_MANUAL":
-        prompt = "👋 [AUTO] J'ai chargé le manuel. Dis-moi que tu es prêt et demande ce que je veux faire."
-        st.session_state.auto_trigger = None # Reset
-
-    elif trigger == "AUTO_ANALYSE":
-        prompt = "🔥 [AUTO] Analyse ce fichier. Guide-moi selon mon niveau."
-        st.session_state.auto_trigger = None 
-
-    elif trigger == "AUTO_COACH":
-        prompt = "⚖️ [AUTO] J'ai envoyé mon essai. Corrige-moi."
-        st.session_state.auto_trigger = None
-        
-    else:
-        # Input Manuel
-        user_input = st.chat_input(T["placeholder"])
-        if user_input:
-            prompt = user_input
-            with chat_container:
-                with st.chat_message("user"): st.markdown(prompt)
-            st.session_state.chat_history.append({"role": "user", "content": prompt})
-
-    # 3. GÉNÉRATION IA
-    if prompt:
-        with chat_container:
-            with st.chat_message("assistant"):
-                with st.spinner(T["analyzing"]):
-                    try:
-                        req = []
-                        if "pdf_ref" in st.session_state: req.extend([st.session_state.pdf_ref, "MANUEL"])
-                        if "audio_ref" in st.session_state: req.extend([st.session_state.audio_ref, "CIBLE"])
-                        if "try_ref" in st.session_state: req.extend([st.session_state.try_ref, "ESSAI"])
-                        if "vision_ref" in st.session_state: req.extend([st.session_state.vision_ref, "PHOTO"])
-                        req.append(prompt)
-                        
-                        sys_prompt = build_system_prompt(
-                            lang, style_tone, style_format, 
-                            st.session_state.get("memory_content", ""), 
-                            "pdf_ref" in st.session_state,
-                            trigger_mode=trigger if trigger else "VISION" if "vision_ref" in st.session_state else None,
-                            user_level=user_level
-                        )
-
-                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
-                        resp = model.generate_content(req)
-                        
-                        st.markdown(resp.text)
-                        st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
-                    except Exception as e:
-                        st.error(f"Erreur : {e}")
