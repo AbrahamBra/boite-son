@@ -62,7 +62,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 3. DICTIONNAIRE COMPLET (TEXTES RICHES) ---
-# --- 3. DICTIONNAIRE COMPLET (CORRIGÉ) ---
 TR = {
     "Français 🇫🇷": {
         "title": "Groovebox Tutor",
@@ -87,8 +86,8 @@ TR = {
         "sugg_1": "Analyse ce son",
         "sugg_2": "Structure rythmique",
         "sugg_3": "Fonction cachée"
-    }
-}
+        "about": "📖 Philosophie du projet",
+        "about_text": """**Groovebox Tutor** est né d'une frustration : celle de voir des musiciens acheter des machines incroyables... pour finalement copier des presets trouvés sur Reddit.
 
 ### Notre vision
 Nous croyons que **comprendre** vaut mieux que **copier**.
