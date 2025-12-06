@@ -64,33 +64,39 @@ st.markdown("""
 # --- 3. DICTIONNAIRE COMPLET (AVEC TEXTES RICHES & CORRECTIONS) ---
 TR = {
     "Français 🇫🇷": {
-        "settings": "1. Configuration",
-        "api_label": "Clé API Google",
+        "title": "Groovebox Tutor",
+        "subtitle": "Ton binôme pédagogique. On décortique, tu apprends.",
+        "settings": "Configuration", 
+        "api_label": "Clé API Google", 
         "api_help": "ℹ️ Pourquoi une clé perso ?",
-        "api_desc": "Projet open-source. L'usage de votre propre clé gratuite garantit votre indépendance et la gratuité totale de l'outil.",
-        "doc_section": "2. Votre Machine",
-        "doc_help": "🔍 Trouver mon manuel officiel",
-        "manual_upload": "Déposer le Manuel PDF ici",
+        "api_desc": "Projet open-source. L'usage de votre propre clé gratuite garantit votre indépendance.",
+        "doc_section": "2. Votre Machine", 
+        "doc_help": "Manuels",
+        "manual_upload": "Déposer le Manuel PDF ici", 
+        "manual_loaded": "Manuel OK",
         "audio_title": "🎧 Le Son à Analyser",
         "audio_subtitle": "C'est ici que la magie opère. Glissez un fichier pour lancer l'écoute.",
         "audio_label": "Fichier Audio",
-        # --- AJOUTS V5 ---
-        "coach_section": "🧪 Mode Coach (Comparaison)",
+        "coach_section": "🧪 Mode Coach", 
         "coach_desc": "Charge ton propre essai ici. L'IA comparera ton son avec la cible.",
         "coach_label": "Mon Essai (mp3/wav)",
-        "vision_section": "👁️ Vision Debug",
-        "vision_desc": "Montre tes réglages (Photo)",
+        "vision_section": "👁️ Vision Debug", 
+        "vision_desc": "Montre tes réglages (Photo)", 
         "vision_toggle": "Activer Caméra / Upload",
-        # -----------------
-        "style_section": "3. Style Pédagogique",
+        "style_section": "3. Style Pédagogique", 
         "memory_title": "4. 💾 Session & Mémoire",
         "memory_help": "💡 Comment ça marche ?",
-        "memory_desc": "**Sauvegarder votre progression :**\n\n1. En fin de session, cliquez sur **💾 Télécharger** en bas\n2. Un fichier .txt sera téléchargé avec tout l'historique\n3. La prochaine fois, glissez ce fichier ici pour reprendre\n\nL'IA se souviendra de tout le contexte !",
+        "memory_desc": "Sauvegarder votre progression...",
         "memory_load": "📂 Reprendre une session précédente",
         "memory_save": "💾 Télécharger Session",
         "reset": "🔄 Nouvelle Session",
+        "placeholder": "Pose une question...",
+        "analyzing": "Analyse...",
+        "sugg_1": "Analyse ce son",
+        "sugg_2": "Structure rythmique",
+        "sugg_3": "Fonction cachée",
         "about": "📖 Philosophie du projet",
-        "about_text": """**Groovebox Tutor** est né d'une frustration : celle de voir des musiciens acheter des machines incroyables... pour finalement copier des presets trouvés sur Reddit.
+        "about_text": """**Groovebox Tutor** est né d'une frustration : celle de voir des musiciens acheter des machines incroyables... pour finalement copier des presets.
 
 ### Notre vision
 
@@ -298,6 +304,20 @@ with st.sidebar:
         label_visibility="collapsed",
         key="pdf_upload"
     )
+    
+    # GESTION UPLOAD MANUEL + TRIGGER
+    if uploaded_pdf and "pdf_ref" not in st.session_state and api_key:
+        with st.status("Lecture Manuel...", expanded=False):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
+                t.write(uploaded_pdf.getvalue()); path=t.name
+            ref = genai.upload_file(path, mime_type="application/pdf")
+            while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
+            st.session_state.pdf_ref = ref
+            
+            # 🔥 LE TRIGGER MANQUANT
+            st.session_state.auto_trigger = "AUTO_MANUAL"
+            st.rerun()
+            
     if uploaded_pdf: st.success(T["manual_loaded"])
     
     # Upload 2 : Son à analyser
@@ -450,9 +470,12 @@ if api_key:
     prompt = None
     trigger = st.session_state.get("auto_trigger") # CORRECTION NOM VARIABLE
 
-    if trigger == "AUTO_ANALYSE":
+    if trigger == "AUTO_MANUAL":
+        prompt = "👋 [AUTO] J'ai chargé le manuel. Dis-moi que tu es prêt et demande ce que je veux faire."
+        st.session_state.auto_trigger = None
+
+    elif trigger == "AUTO_ANALYSE":
         prompt = "🔥 [AUTO] Analyse ce fichier. Guide-moi selon mon niveau."
-        # Pas d'ajout user immédiat pour éviter doublon
         st.session_state.auto_trigger = None
 
     elif trigger == "AUTO_COACH":
@@ -460,52 +483,13 @@ if api_key:
         st.session_state.auto_trigger = None
     
     else:
-        # Suggestion Buttons
-        if not st.session_state.chat_history:
-            col1, col2, col3 = st.columns(3)
-            if col1.button(T["sugg_1"], use_container_width=True): prompt = T["sugg_1"]
-            elif col2.button(T["sugg_2"], use_container_width=True): prompt = T["sugg_2"]
-            elif col3.button(T["sugg_3"], use_container_width=True): prompt = T["sugg_3"]
-
+        # INPUT MANUEL (PLUS DE BOUTONS ICI)
         user_input = st.chat_input(T["placeholder"])
-        if user_input: prompt = user_input
-        
-        # Si un prompt manuel est détecté
-        if prompt:
+        if user_input:
+            prompt = user_input
             with chat_container:
                 with st.chat_message("user"): st.markdown(prompt)
             st.session_state.chat_history.append({"role": "user", "content": prompt})
-
-    # 3. GÉNÉRATION IA
-    if prompt:
-        # On affiche un spinner DANS le container du chat
-        with chat_container:
-            with st.chat_message("assistant"):
-                with st.spinner(T["analyzing"]): # Utilisation de la clé T corrigée
-                    try:
-                        req = []
-                        if "pdf_ref" in st.session_state: req.extend([st.session_state.pdf_ref, "MANUEL"])
-                        if "audio_ref" in st.session_state: req.extend([st.session_state.audio_ref, "CIBLE"])
-                        if "try_ref" in st.session_state: req.extend([st.session_state.try_ref, "ESSAI"])
-                        if "vision_ref" in st.session_state: req.extend([st.session_state.vision_ref, "PHOTO"])
-                        req.append(prompt)
-                        
-                        sys_prompt = build_system_prompt(
-                            lang, style_tone, style_format, 
-                            st.session_state.get("memory_content", ""), 
-                            "pdf_ref" in st.session_state,
-                            trigger_mode="AUTO_ANALYSE" if trigger == "AUTO_ANALYSE" else "AUTO_COACH" if trigger == "AUTO_COACH" else None,
-                            user_level=user_level
-                        )
-
-                        # Modele Flash 2.0 (Le plus rapide et stable)
-                        model = genai.GenerativeModel("gemini-2.0-flash-exp", system_instruction=sys_prompt)
-                        resp = model.generate_content(req)
-                        
-                        st.markdown(resp.text)
-                        st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
-                    except Exception as e:
-                        st.error(f"Erreur : {e}")
 
 else:
     st.sidebar.warning("⚠️ Clé API requise / API Key needed")
