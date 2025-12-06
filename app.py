@@ -385,7 +385,18 @@ st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;
 
 # --- LOGIC ---
 if api_key:
-    genai.configure(api_key=api_key)
+        genai.configure(api_key=api_key)
+        
+        # BOUTON DE DEBUG
+        if st.button("🕵️ Voir mes modèles disponibles"):
+            st.write("### Modèles accessibles :")
+            try:
+                for m in genai.list_models():
+                    # On affiche seulement ceux qui savent générer du contenu (texte/chat)
+                    if 'generateContent' in m.supported_generation_methods:
+                        st.code(m.name)
+            except Exception as e:
+                st.error(f"Erreur : {e}")
     
     # 1. GESTION DU PDF (Upload propre)
     if uploaded_pdf:
