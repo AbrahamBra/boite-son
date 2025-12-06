@@ -236,18 +236,10 @@ with st.sidebar:
     st.link_button(T["buy_coffee"], "https://www.buymeacoffee.com/", use_container_width=True)
 
 # --- MAIN PAGE ---
-# On crée deux colonnes : une large pour le texte (5), une petite pour le logo (1)
-col1, col2 = st.columns([5, 1], gap="small")
-
+col1, col2 = st.columns([5, 1])
 with col1:
-    # Le Titre à gauche
     st.title(T["title"])
     st.caption(T["caption"])
-
-with col2:
-    # Le Logo à droite
-    # 'use_column_width=False' permet de garder la taille fixée (100px)
-    st.image("logo.png", width=100)
 
 # --- AUDIO ZONE ---
 with st.container(border=True):
