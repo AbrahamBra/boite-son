@@ -432,47 +432,121 @@ with st.sidebar:
 st.title(T["title"])
 st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;'>{T['subtitle']}</h3>", unsafe_allow_html=True)
 
-# --- LOGIC V5.0 (GEMINI 2.0 FLASH + PROACTIVITÉ + NO BUGS) ---
-if api_key:
-    genai.configure(api_key=api_key)
+# --- 5. LOGIQUE PRINCIPALE (ARCHITECTURE V8) ---
+
+# A. INITIALISATION
+if "chat_history" not in st.session_state: st.session_state.chat_history = []
+lang = "Français 🇫🇷"
+T = TR[lang]
+
+# B. DÉFINITION DE LA SIDEBAR (AFFICHAGE SEULEMENT)
+with st.sidebar:
+    st.markdown(f"### {T['settings']}")
+    api_key = st.text_input(T["api_label"], type="password", placeholder="AIzaSy...")
+    if api_key: genai.configure(api_key=api_key)
+
+    st.markdown("---")
+    st.markdown("### 🎓 Pédagogie")
+    user_level = st.radio("Ton Niveau", ["Débutant (Pas à pas)", "Intermédiaire (Guide)", "Expert (Valeurs)"], index=0)
     
-    # 0. INITIALISATION CHAT
-    if "chat_history" not in st.session_state: st.session_state.chat_history = []
+    st.markdown("---")
+    st.markdown(f"### {T['doc_section']}")
+    
+    # On stocke les widgets dans des variables, on ne traite pas encore
+    uploaded_pdf = st.file_uploader(T["manual_upload"], type=["pdf"])
+    if "pdf_ref" in st.session_state: st.success("✅ Manuel assimilé")
+    
+    st.caption(T["audio_title"])
+    uploaded_audio = st.file_uploader("Audio", type=["mp3", "wav", "m4a"], label_visibility="collapsed")
+    if "audio_ref" in st.session_state: st.caption("✅ Audio Cible prêt")
 
-    # --- CORRECTION BUG : AFFICHAGE DU CHAT EN PREMIER (STABLE) ---
-    chat_container = st.container()
-    with chat_container:
-        for m in st.session_state.chat_history:
-            with st.chat_message(m["role"]): st.markdown(m["content"])
+    st.markdown("---")
+    st.markdown(f"### {T['coach_section']}")
+    uploaded_try = st.file_uploader(T['coach_label'], type=["mp3", "wav", "m4a"])
+    
+    st.markdown("---")
+    st.markdown(f"### {T['vision_section']}")
+    img_mode = st.toggle(T['vision_toggle'])
+    uploaded_img = None
+    if img_mode:
+        tab1, tab2 = st.tabs(["📸", "📂"])
+        with tab1: uploaded_img = st.camera_input("Photo")
+        with tab2: 
+            up = st.file_uploader("Image", type=["jpg", "png"])
+            if up: uploaded_img = up
+    
+    if uploaded_img: 
+        st.session_state.vision_ref = Image.open(uploaded_img)
+        st.toast("Vision active")
 
-    # 1. GESTION DES UPLOADS EN ARRIÈRE-PLAN
+    with st.expander("💾 Sauvegarde"):
+        if st.button("Reset Chat", use_container_width=True):
+            st.session_state.clear()
+            st.rerun()
+
+# C. AFFICHAGE DU CHAT (IMMEDIATEMENT ICI)
+# C'est ce qui empêche le bug : le chat est dessiné AVANT les calculs lourds
+st.title(T["title"])
+st.caption(T["subtitle"])
+
+chat_container = st.container()
+with chat_container:
+    for m in st.session_state.chat_history:
+        with st.chat_message(m["role"]): st.markdown(m["content"])
+
+# D. TRAITEMENT DES FICHIERS (EN ARRIÈRE-PLAN VISUEL)
+if api_key:
+    # 1. PDF
     if uploaded_pdf and "pdf_ref" not in st.session_state:
-        with st.status("Lecture Manuel...", expanded=False):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
-                t.write(uploaded_pdf.getvalue()); path=t.name
-            ref = genai.upload_file(path, mime_type="application/pdf")
-            while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
-            st.session_state.pdf_ref = ref
+        # On force l'affichage dans la sidebar pour ne pas casser le chat
+        with st.sidebar:
+            with st.status("Lecture Manuel...", expanded=False):
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t:
+                    t.write(uploaded_pdf.getvalue()); path=t.name
+                ref = genai.upload_file(path, mime_type="application/pdf")
+                while ref.state.name == "PROCESSING": time.sleep(1); ref = genai.get_file(ref.name)
+                st.session_state.pdf_ref = ref
+                st.session_state.auto_trigger = "AUTO_MANUAL"
+                st.rerun()
 
-    if "current_audio_path" in st.session_state and "audio_ref" not in st.session_state:
-        with st.status("Analyse Audio...", expanded=False):
-            ref = genai.upload_file(path=st.session_state.current_audio_path)
-            while ref.state.name == "PROCESSING": time.sleep(0.5); ref = genai.get_file(ref.name)
-            st.session_state.audio_ref = ref
+    # 2. AUDIO CIBLE
+    if uploaded_audio:
+        if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
+            with st.sidebar: # Calcul dans la sidebar
+                with st.status("Analyse Cible...", expanded=False):
+                    suffix = f".{uploaded_audio.name.split('.')[-1]}"
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                        tmp.write(uploaded_audio.getvalue())
+                        path = tmp.name
+                    ref = genai.upload_file(path)
+                    while ref.state.name == "PROCESSING": time.sleep(0.5); ref = genai.get_file(ref.name)
+                    st.session_state.audio_ref = ref
+                    st.session_state.current_audio_path = path
+                    st.session_state.current_audio_name = uploaded_audio.name
+                    st.session_state.auto_trigger = "AUTO_ANALYSE"
+                    st.rerun()
 
-    if "try_path" in st.session_state and "try_ref" not in st.session_state:
-        with st.status("Analyse Essai...", expanded=False):
-            ref = genai.upload_file(path=st.session_state.try_path)
-            while ref.state.name == "PROCESSING": time.sleep(0.5); ref = genai.get_file(ref.name)
-            st.session_state.try_ref = ref
+    # 3. AUDIO ESSAI
+    if uploaded_try:
+        if "current_try_name" not in st.session_state or st.session_state.get("current_try_name") != uploaded_try.name:
+             with st.sidebar:
+                 with st.status("Analyse Essai...", expanded=False):
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as t:
+                        t.write(uploaded_try.getvalue()); path=t.name
+                    ref = genai.upload_file(path)
+                    while ref.state.name == "PROCESSING": time.sleep(0.5); ref = genai.get_file(ref.name)
+                    st.session_state.try_ref = ref
+                    st.session_state.current_try_name = uploaded_try.name
+                    st.session_state.auto_trigger = "AUTO_COACH"
+                    st.rerun()
 
-    # 2. GESTION DES TRIGGERS & INPUT
+    # E. GESTION DES INPUTS ET TRIGGERS
     prompt = None
-    trigger = st.session_state.get("auto_trigger") # CORRECTION NOM VARIABLE
+    trigger = st.session_state.get("auto_trigger")
 
     if trigger == "AUTO_MANUAL":
         prompt = "👋 [AUTO] J'ai chargé le manuel. Dis-moi que tu es prêt et demande ce que je veux faire."
-        st.session_state.auto_trigger = None
+        st.session_state.auto_trigger = None 
 
     elif trigger == "AUTO_ANALYSE":
         prompt = "🔥 [AUTO] Analyse ce fichier. Guide-moi selon mon niveau."
@@ -483,15 +557,15 @@ if api_key:
         st.session_state.auto_trigger = None
     
     else:
-        # INPUT MANUEL (PLUS DE BOUTONS ICI)
         user_input = st.chat_input(T["placeholder"])
         if user_input:
             prompt = user_input
+            # Ajout visuel immédiat
             with chat_container:
                 with st.chat_message("user"): st.markdown(prompt)
             st.session_state.chat_history.append({"role": "user", "content": prompt})
 
-    # 3. GÉNÉRATION IA (C'EST LA PARTIE QUI MANQUAIT CHEZ TOI)
+    # F. GÉNÉRATION IA
     if prompt:
         with chat_container:
             with st.chat_message("assistant"):
@@ -505,8 +579,6 @@ if api_key:
                         req.append(prompt)
                         
                         sys_prompt = build_system_prompt(
-                            "Français", "Mentor", "Standard", # Valeurs par défaut
-                            st.session_state.get("memory_content", ""), 
                             "pdf_ref" in st.session_state,
                             trigger_mode=trigger if trigger else "VISION" if "vision_ref" in st.session_state else None,
                             user_level=user_level
@@ -521,4 +593,6 @@ if api_key:
                         st.error(f"Erreur : {e}")
 
 else:
-    st.sidebar.warning("⚠️ Clé API requise / API Key needed")
+    st.info("👋 Bienvenue. Entrez votre clé API dans la barre latérale pour activer le Coach.")
+Use Arrow Up and Arrow Down to select a turn, Enter to jump to it, and Escape to return to the chat.
+Start typing a prompt
