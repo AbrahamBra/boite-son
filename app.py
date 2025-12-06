@@ -10,7 +10,7 @@ from datetime import datetime
 # --- 1. CONFIGURATION ---
 st.set_page_config(
     page_title="Groovebox Tutor",
-    page_icon="logo.png",
+    page_icon="🎹",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -321,9 +321,19 @@ with st.sidebar:
                 st.session_state.current_audio_name = uploaded_audio.name
                 st.rerun()
     
-    if "current_audio_name" in st.session_state:
-        st.success(f"✅ {st.session_state.current_audio_name}")
-        st.audio(st.session_state.current_audio_path)
+    if "current_audio_path" in st.session_state:
+        st.success(f"✅ {st.session_state.get('current_audio_name', 'Fichier Audio')}")
+        
+        # CORRECTION : On lit les bytes directement pour éviter l'erreur MediaFileStorage
+        try:
+            with open(st.session_state.current_audio_path, "rb") as audio_file:
+                audio_bytes = audio_file.read()
+            st.audio(audio_bytes)
+        except FileNotFoundError:
+            st.warning("⚠️ Le fichier audio a expiré. Merci de le recharger.")
+            # Nettoyage préventif
+            del st.session_state.current_audio_path
+            st.rerun()
     
     # Upload 3 : Session précédente
     with st.expander("💾 " + ("Reprendre une session" if lang == "Français 🇫🇷" else "Resume session")):
