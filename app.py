@@ -623,7 +623,6 @@ if not api_key:
             ⚠️ {'Outil d\'analyse à but éducatif. L\'inspiration est légale, le plagiat ne l\'est pas.' if lang == 'Français 🇫🇷' else 'Educational analysis tool. Inspiration is legal, plagiarism is not.'}
         </p>
     </div>
-    """, unsafe_allow_html=True)
 
 # --- LOGIC ---
 if api_key:
