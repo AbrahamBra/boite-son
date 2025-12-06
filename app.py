@@ -5,7 +5,7 @@ import tempfile
 import time
 from datetime import datetime
 
-# --- 1. SETUP & CONFIGURATION  ---
+# --- 1. SETUP & CONFIGURATION ---
 st.set_page_config(
     page_title="Groovebox Tutor",
     page_icon="logo.png",
@@ -13,39 +13,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- 2. CSS "PREMIUM MINIMALIST" ---
+# --- 2. CSS "PREMIUM STUDIO" ---
 st.markdown("""
 <style>
-    /* Import de la police "Inter" (Standard Pro) */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
 
-    /* BASE */
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: #E0E0E0; /* Blanc cassé pour moins de fatigue oculaire */
+        color: #E0E0E0;
     }
     
-    /* FOND UNIFIÉ (Sidebar + Main) */
     .stApp {
-        background-color: #0E1117; /* Gris très profond (Pas noir pur) */
+        background-color: #0E1117;
     }
     [data-testid="stSidebar"] {
         background-color: #0E1117;
-        border-right: 1px solid #1F1F1F; /* Séparation ultra-subtile */
+        border-right: 1px solid #1F1F1F;
     }
 
-    /* TITRES */
-    h1 {
-        font-weight: 600;
-        letter-spacing: -1px;
-        color: #FFFFFF;
-    }
-    h2, h3 {
-        font-weight: 400;
-        color: #A0A0A0;
-    }
+    h1 { font-weight: 600; letter-spacing: -1px; color: #FFFFFF; }
+    h2, h3 { font-weight: 400; color: #A0A0A0; }
 
-    /* INPUTS (Flat Design) */
     .stTextInput > div > div > input {
         background-color: #161920;
         border: 1px solid #303030;
@@ -54,11 +42,10 @@ st.markdown("""
         padding: 10px;
     }
     .stTextInput > div > div > input:focus {
-        border-color: #4A4A4A; /* Pas de bleu Windows, juste un gris plus clair */
+        border-color: #4A4A4A;
         box-shadow: none;
     }
 
-    /* BOUTONS (Sophistiqués) */
     .stButton > button {
         background-color: #161920;
         color: white;
@@ -72,9 +59,8 @@ st.markdown("""
         border-color: #FFFFFF;
     }
     
-    /* BOUTON ACTION PRINCIPALE (Primary) */
     div[data-testid="stHorizontalBlock"] > div:first-child button {
-        background-color: #FFFFFF; /* Bouton Blanc style Vercel/Apple */
+        background-color: #FFFFFF;
         color: #000000;
         border: none;
     }
@@ -82,7 +68,6 @@ st.markdown("""
         background-color: #E0E0E0;
     }
 
-    /* UPLOAD ZONES (Clean) */
     div[data-testid="stFileUploader"] {
         background-color: #12141A;
         border: 1px dashed #303030;
@@ -94,7 +79,6 @@ st.markdown("""
         border-color: #606060;
     }
     
-    /* SUGGESTIONS (Pills) */
     button[kind="secondary"] {
         background-color: transparent;
         border: 1px solid #303030;
@@ -108,22 +92,16 @@ st.markdown("""
         background-color: transparent;
     }
 
-    /* NETTOYAGE */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     .block-container {padding-top: 3rem; padding-bottom: 5rem;}
     
-    /* Cacher les labels des inputs si besoin pour épuré */
-    .stTextInput label {
-        font-size: 12px;
-        color: #606060;
-    }
+    .stTextInput label { font-size: 12px; color: #606060; }
 </style>
 """, unsafe_allow_html=True)
 
-
-# --- 3. DICTIONNAIRE MULTILINGUE (COMPLET V9 - DESIGN STUDIO) ---
+# --- 3. DICTIONNAIRE TRADUCTION COMPLET ---
 TR = {
     "Français 🇫🇷": {
         "settings": "Paramètres",
@@ -295,7 +273,7 @@ TR = {
     }
 }
 
-# --- FONCTIONS UTILES ---
+# --- 4. FONCTIONS UTILES ---
 def get_mime_type(filename):
     if filename.endswith('.m4a'): return 'audio/mp4'
     if filename.endswith('.wav'): return 'audio/wav'
@@ -318,31 +296,35 @@ def format_history(history):
         text += f"{role}: {msg['content']}\n\n"
     return text
 
-# --- INTERFACE ---
+# --- 5. INTERFACE UTILISATEUR ---
 
-# 1. SIDEBAR (Ultra Minimaliste)
+# --- SIDEBAR ---
 with st.sidebar:
-    # Langue
-    lang_options = ["Français 🇫🇷", "English 🇬🇧", "Español 🇪🇸", "Deutsch 🇩🇪", "Italiano 🇮🇹", "Português 🇧🇷", "日本語 🇯🇵"]
-    lang = st.selectbox("Langue", list(TR.keys()), label_visibility="collapsed")
-T = TR[lang] # Ceci chargera les bonnes clés
+    # Choix de la langue
+    lang_options = list(TR.keys())
+    lang = st.selectbox("Langue / Language", lang_options, label_visibility="collapsed")
+    T = TR[lang] # Chargement des textes dans la bonne langue
     
     st.markdown("### " + T["settings"])
     
-    # API Key (Discret)
-    api_key = st.text_input("API Key", type="password", placeholder="Collez votre clé Google ici")
+    # API Key
+    api_key = st.text_input(T["api_label"], type="password", placeholder="AIzaSy...")
     if not api_key:
         st.caption("Une clé est requise pour utiliser l'IA.")
-        with st.expander("Obtenir une clé"):
-            st.markdown("[Google AI Studio](https://aistudio.google.com/) (Gratuit)")
+        with st.expander("Obtenir une clé / Get Key"):
+            st.markdown("[Google AI Studio](https://aistudio.google.com/) (Free)")
 
     st.markdown("---")
     
-    # Doc
+    # Documentation
     st.caption(T["doc_section"])
     with st.expander(T["doc_help"]):
-        st.markdown("Liens vers les sites constructeurs (Elektron, Roland, Korg...)")
-        # Ici tu remets tes liens si tu veux, mais cachés par défaut pour le clean
+        st.markdown("""
+        - [Elektron](https://www.elektron.se/en/support-downloads)
+        - [Roland](https://www.roland.com/global/support/)
+        - [Korg](https://www.korg.com/us/support/)
+        - [Akai](https://www.akaipro.com/support)
+        """)
     
     uploaded_pdf = st.file_uploader(T["manual_upload"], type=["pdf"], label_visibility="collapsed")
     if uploaded_pdf:
@@ -350,7 +332,7 @@ T = TR[lang] # Ceci chargera les bonnes clés
 
     st.markdown("---")
     
-    # Session
+    # Session / Mémoire
     st.caption(T["memory_section"])
     col_a, col_b = st.columns(2)
     with col_a:
@@ -358,27 +340,32 @@ T = TR[lang] # Ceci chargera les bonnes clés
             st.session_state.clear()
             st.rerun()
     with col_b:
-        # Placeholder pour download (logique activée si chat existe)
-        pass 
+        # Bouton Download (Visible seulement si historique existe)
+        if "chat_history" in st.session_state and st.session_state.chat_history:
+            history_txt = format_history(st.session_state.chat_history)
+            st.download_button(T["memory_save"], history_txt, "session.txt", "text/plain", use_container_width=True)
 
     st.markdown("---")
     with st.expander(T["about"]):
-        st.caption("Groovebox Tutor est un projet Open Source gratuit dédié à l'apprentissage de la synthèse sonore.")
-        st.markdown("[Soutenir le projet](https://www.buymeacoffee.com/)")
+        st.caption("Groovebox Tutor is a free Open Source project dedicated to sound synthesis education.")
+        st.markdown("[Support / Donate](https://www.buymeacoffee.com/)")
 
-# 2. MAIN HEADER (Typographie forte)
+# --- MAIN AREA ---
 st.title(T["title"])
 st.markdown(f"<h3 style='margin-top: -20px; margin-bottom: 40px; color: #808080;'>{T['subtitle']}</h3>", unsafe_allow_html=True)
 
-# 3. ONBOARDING (Si pas de clé)
+# Message d'accueil (Onboarding)
 if not api_key:
     st.info(f"{T['step_1']}")
+elif not uploaded_pdf:
+    st.info(f"{T['step_2']}")
+elif "current_audio_path" not in st.session_state:
+    st.info(f"{T['step_3']}")
 
-# 4. STUDIO ZONE (Clean)
+# Zone Audio
 with st.container():
-    uploaded_audio = st.file_uploader("Fichier Audio", type=["mp3", "wav", "m4a"], label_visibility="collapsed")
+    uploaded_audio = st.file_uploader(T["audio_label"], type=["mp3", "wav", "m4a"], label_visibility="collapsed")
     
-    # Logique Audio
     if uploaded_audio:
         if "current_audio_name" not in st.session_state or st.session_state.current_audio_name != uploaded_audio.name:
             suffix = f".{uploaded_audio.name.split('.')[-1]}"
@@ -391,41 +378,39 @@ with st.container():
     if "current_audio_path" in st.session_state:
         st.audio(st.session_state.current_audio_path)
 
-# 5. CHAT LOGIC
+# --- CHAT ENGINE ---
 if api_key:
     genai.configure(api_key=api_key)
     
-    # PDF Load
+    # PDF Processing
     if uploaded_pdf and "pdf_ref" not in st.session_state:
-        with st.status("Lecture du manuel...", expanded=False) as status:
+        with st.status("Lecture du manuel / Reading manual...", expanded=False) as status:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as t: t.write(uploaded_pdf.getvalue()); p=t.name
             r = upload_pdf_to_gemini(p)
             if r: 
                 st.session_state.pdf_ref = r
-                status.update(label="Manuel assimilé", state="complete")
+                status.update(label="Manuel assimilé / Ready", state="complete")
 
-    # Chat History
+    # Init History
     if "chat_history" not in st.session_state: st.session_state.chat_history = []
     
-    # Affichage Chat
+    # Display History
     for m in st.session_state.chat_history:
         with st.chat_message(m["role"]): st.markdown(m["content"])
 
     # Suggestions (Pills)
+    prompt = None
     if not st.session_state.chat_history:
         col1, col2, col3 = st.columns(3)
         if col1.button(T["sugg_1"], type="secondary", use_container_width=True): prompt = T["sugg_1"]
         elif col2.button(T["sugg_2"], type="secondary", use_container_width=True): prompt = T["sugg_2"]
         elif col3.button(T["sugg_3"], type="secondary", use_container_width=True): prompt = T["sugg_3"]
-        else: prompt = None
-    else:
-        prompt = None
 
-    # Input User
+    # Input Box
     user_input = st.chat_input(T["placeholder"])
     if user_input: prompt = user_input
 
-    # Traitement IA
+    # AI Processing
     if prompt:
         with st.chat_message("user"): st.markdown(prompt)
         st.session_state.chat_history.append({"role": "user", "content": prompt})
@@ -433,7 +418,8 @@ if api_key:
         try: tools = [genai.protos.Tool(google_search=genai.protos.GoogleSearch())]
         except: tools = None
         
-        sys_prompt = "Tu es un expert musical pédagogue. Sois concis et précis."
+        # Le prompt système force l'IA à parler dans la langue choisie par 'lang'
+        sys_prompt = f"Tu es un expert musical pédagogue. Réponds impérativement en : {lang}. Sois clair et technique."
         
         model = genai.GenerativeModel("gemini-2.5-flash", system_instruction=sys_prompt, tools=tools)
         
@@ -447,10 +433,9 @@ if api_key:
             req.append("Analyse l'audio.")
 
         with st.chat_message("assistant"):
-            # Pas de spinner texte, juste l'animation par défaut
             try:
                 resp = model.generate_content(req)
                 st.markdown(resp.text)
                 st.session_state.chat_history.append({"role": "assistant", "content": resp.text})
             except Exception as e:
-                st.error("Erreur de connexion IA")
+                st.error(f"Erreur IA : {e}")
