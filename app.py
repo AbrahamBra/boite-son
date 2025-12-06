@@ -452,7 +452,7 @@ Invite au retour d'expérience.
 
 # ⚖️ CADRE LÉGAL & ÉTHIQUE
 
-⚠️ **IMPORTANT** : Outil **éducatif**, pas un copieur de sons.
+**IMPORTANT** : Outil **éducatif**, pas un copieur de sons.
 
 - **Inspiration légale** : Analyser les techniques ✅
 - **Plagiat illégal** : Reproduire exactement un preset commercial ❌
