@@ -9,7 +9,7 @@ import re
 # --- 1. CONFIGURATION INITIALE ---
 st.set_page_config(
     page_title="Groovebox Tutor",
-    page_icon="🎹",
+    page_icon="logo.png", # <--- Mets le nom de ton fichier ici
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -200,7 +200,7 @@ with st.sidebar:
     T = TR[lang]
     
     # 2. Settings de base
-    st.image("https://cdn-icons-png.flaticon.com/512/7603/7603284.png", width=50)
+    st.image("logo.png", width=80) 
     st.title(T["settings"])
     api_key = st.text_input("API Key", type="password")
     with st.expander(T["api_help"]):
