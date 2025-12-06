@@ -489,35 +489,46 @@ if api_key:
             has_manual="pdf_ref" in st.session_state
         )
         
-        # MODÈLE : On force gemini-1.5-flash (le plus sûr pour audio + pdf)
+        # --- CHOIX DU MODÈLE (Basé sur ta liste) ---
+        # On utilise le modèle le plus performant de ta liste pour l'audio
+        target_model = "gemini-2.0-flash-exp"
+        
         try:
-            model = genai.GenerativeModel("models/gemini-1.5-flash-latest", system_instruction=sys_prompt, tools=tools)
+            model = genai.GenerativeModel(
+                target_model, 
+                system_instruction=sys_prompt, 
+                tools=tools
+            )
         except Exception as e:
-            st.error(f"Erreur init modèle : {e}")
+            st.error(f"Erreur d'initialisation avec {target_model} : {e}")
             st.stop()
         
-        # CONSTRUCTION DE LA REQUÊTE
+        # --- CONSTRUCTION DE LA REQUÊTE ---
         req = []
         
+        # 1. Le Manuel (si présent)
         if "pdf_ref" in st.session_state:
             req.append(st.session_state.pdf_ref)
-            req.append("Manuel technique (référence).")
+            req.append("MANUEL TECHNIQUE : Utilise ce document comme référence.")
             
+        # 2. L'Audio (si présent)
         if "audio_ref" in st.session_state:
             req.append(st.session_state.audio_ref)
-            req.append("Fichier audio à analyser.")
+            req.append("FICHIER AUDIO : Analyse ce son.")
             
+        # 3. La Question
         req.append(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Analyse en cours..."):
+            with st.spinner(f"Analyse avec {target_model}..."):
                 try:
                     resp = model.generate_content(req)
                     text_resp = resp.text
                     st.markdown(text_resp)
                     st.session_state.chat_history.append({"role": "assistant", "content": text_resp})
                 except Exception as e:
-                    st.error(f"Erreur IA : {e}")
+                    st.error(f"Erreur lors de la génération : {e}")
+        
 
 else:
     st.sidebar.warning("⚠️ Clé API requise / API Key needed")
