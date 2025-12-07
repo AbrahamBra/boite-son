@@ -374,10 +374,10 @@ else:
                         
                         # 2. Construire le prompt
                         sys_prompt = build_system_prompt(
-                            "Français", style_tone, user_level, 
+                            style_tone, user_level, 
                             "pdf_ref" in st.session_state,
-                            chat_context,
-                            trigger_mode=trigger if trigger else "VISION" if "vision_ref" in st.session_state else None
+                             chat_context,
+                             trigger_mode=trigger if trigger else "VISION" if "vision_ref" in st.session_state else None
                         )
 
                         # 3. Requête
